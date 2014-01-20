@@ -33,7 +33,8 @@ BoxPlot.loader <- function(
   binning.variable = "IND",
   binning.manual = FALSE,
   binning.type = '',
-  binning.variabletype = ''
+  binning.variabletype = '',
+  output.suffix = ''
   )
  {
  	
@@ -95,7 +96,7 @@ BoxPlot.loader <- function(
 			trimmedGroupName <- gsub("^\\s+|\\s+$", "",currentGroup)
 			
 			#Run the lm function on each grouping.
-			lapply(split(currentGroupingData,currentGroupingData$GROUP.1),calculateANOVA,"GROUP.1",trimmedGroupName)
+			lapply(split(currentGroupingData,currentGroupingData$GROUP.1),calculateANOVA,"GROUP.1",trimmedGroupName,output.suffix)
 		}
 		
 		#This calls the first function on each "GROUP" which will call another function on "GROUP.1"
@@ -103,15 +104,15 @@ BoxPlot.loader <- function(
 	}
 	else if("GROUP.1" %in% colnames(line.data)) 
 	{
-		lapply(split(line.data, line.data$GROUP.1), calculateANOVA,"GROUP.1","")
+		lapply(split(line.data, line.data$GROUP.1), calculateANOVA,"GROUP.1","",output.suffix)
 	}	
 	else if("GROUP" %in% colnames(line.data)) 
 	{
-		lapply(split(line.data, line.data$GROUP), calculateANOVA,"GROUP","")
+		lapply(split(line.data, line.data$GROUP), calculateANOVA,"GROUP","",output.suffix)
 	}
 	else
 	{
-		calculateANOVA(line.data,"","")
+		calculateANOVA(line.data,"","",output.suffix)
 	}
 	######################################################
 	
@@ -124,18 +125,18 @@ BoxPlot.loader <- function(
 		splitData <- split(line.data,line.data$GROUP);
 		groupList <- matrix(unique(line.data$GROUP));
 		
-		lapply(groupList,graphSubset,splitData,concept.independent.type,concept.independent,genes.independent,concept.dependent.type,concept.dependent,genes.dependent,output.file,flipimage,binning.enabled);	
+		lapply(groupList,graphSubset,splitData,concept.independent.type,concept.independent,genes.independent,concept.dependent.type,concept.dependent,genes.dependent,output.file,flipimage,binning.enabled,output.suffix);	
 	}
 	else
 	{
-		graphSubset('',line.data,concept.independent.type,concept.independent,genes.independent,concept.dependent.type,concept.dependent,genes.dependent,output.file,flipimage,binning.enabled);
+		graphSubset('',line.data,concept.independent.type,concept.independent,genes.independent,concept.dependent.type,concept.dependent,genes.dependent,output.file,flipimage,binning.enabled,output.suffix);
 	}
 	######################################################
 	
 	print("-------------------")
 }
 
-calculateANOVA <- function(splitData,splitColumn,fileNameQualifier)
+calculateANOVA <- function(splitData,splitColumn,fileNameQualifier,output.suffix='')
 {
 	#This is the current group we are generating the statistics for.
 	currentGroup <- unique(splitData[[splitColumn]])
@@ -144,10 +145,10 @@ calculateANOVA <- function(splitData,splitColumn,fileNameQualifier)
 	if(fileNameQualifier != '') fileNameQualifier <- paste('_',fileNameQualifier,sep="");
 	
 	#The filename for the summary stats file.
-	summaryFileName <- paste("ANOVA_RESULTS",fileNameQualifier,".txt",sep="")
+	summaryFileName <- paste("ANOVA_RESULTS",fileNameQualifier,output.suffix,".txt",sep="")
 	
 	#The filename for the pairwise file.
-	pairwiseFileName <- paste("ANOVA_PAIRWISE",fileNameQualifier,".txt",sep="")
+	pairwiseFileName <- paste("ANOVA_PAIRWISE",fileNameQualifier,output.suffix,".txt",sep="")
 	
 	#We need to get the p-value for this ANOVA.
 	#Run the ANOVA
@@ -238,7 +239,8 @@ graphSubset <- function(currentGroup,
 						genes.dependent,
 						output.file,
 						flipimage,
-						binning.enabled)
+						binning.enabled,
+						output.suffix='')
 {
 	#Get the name of the group.
 	trimmedGroupName <- gsub("^\\s+|\\s+$", "",currentGroup)
@@ -283,7 +285,7 @@ graphSubset <- function(currentGroup,
 		tmp <- tmp + theme(legend.text = theme_text(size = 9,hjust=0))
 		
 		#Get the device ready for printing and create the image file.
-		CairoPNG(file=paste(output.file,"_",trimmedGroupName,".png",sep=""),width=800,height=800)
+		CairoPNG(file=paste(output.file,"_",trimmedGroupName,output.suffix,".png",sep=""),width=800,height=800)
 		print (tmp)
 		
 		#Close any open devices.
@@ -319,7 +321,7 @@ graphSubset <- function(currentGroup,
 		tmp <- tmp + theme(legend.text = theme_text(size = 9,hjust=0))
 		
 		#Get the device ready for printing and create the image file.
-		CairoPNG(file=paste(output.file,"_",trimmedGroupName,".png",sep=""),width=800,height=800)
+		CairoPNG(file=paste(output.file,"_",trimmedGroupName,output.suffix,".png",sep=""),width=800,height=800)
 		
 		print (tmp)
 			
