@@ -1,5 +1,7 @@
 package jobs.steps
 
+import com.recomdata.transmart.data.association.RModulesController
+import groovy.json.JsonBuilder
 import groovy.json.JsonOutput
 import jobs.UserParameters
 
@@ -21,6 +23,14 @@ class ParametersFileStep implements Step{
             }
         }
         File paramsFile = new File(temporaryDirectory, 'request.json')
-        paramsFile << JsonOutput.prettyPrint(params.toJSON())
+        paramsFile << getRequestJson()
+    }
+
+    private String getRequestJson() {
+        JsonBuilder builder = new JsonBuilder()
+        //sorting the map so its easier to compare visually
+        builder(new TreeMap(params[RModulesController.ORIGINAL_REQUEST_PARAMS]))
+        //pretty printing so its easier to read
+        return builder.toPrettyString()
     }
 }

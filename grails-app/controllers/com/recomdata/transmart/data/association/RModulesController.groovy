@@ -28,6 +28,7 @@ import jobs.ScatterPlot
 import jobs.SurvivalAnalysis
 import jobs.TableWithFisher
 import jobs.LineGraph
+import jobs.steps.ParametersFileStep
 import org.codehaus.groovy.grails.web.converters.exceptions.ConverterException
 import org.codehaus.groovy.grails.web.json.JSONElement
 import org.quartz.JobDataMap
@@ -49,6 +50,8 @@ class RModulesController {
             "RNASEQ":           "rnaseq_cog",
             "METABOLOMICS":     "metabolite"
     ]
+
+    public static final String ORIGINAL_REQUEST_PARAMS = 'requestParams'
 
     def springSecurityService
     def asyncJobService
@@ -128,6 +131,10 @@ class RModulesController {
     }
 
     private void createJob(Map params, Class clazz, boolean useAnalysisContrants = true) {
+
+        //making a copy of the original req params, as we are modifying them ..
+        Map requestParams = new HashMap(params)
+
         params[PARAM_GRAILS_APPLICATION] = grailsApplication
         params[PARAM_JOB_CLASS] = clazz
         if (useAnalysisContrants) {
@@ -137,6 +144,9 @@ class RModulesController {
 
             params.analysisConstraints = massageConstraints params[PARAM_ANALYSIS_CONSTRAINTS]
         }
+
+        //saving the original params for later use
+        params[ORIGINAL_REQUEST_PARAMS] = requestParams
 
         JobDetail jobDetail   = new JobDetail(params.jobName, params.jobType, AnalysisQuartzJobAdapter)
         jobDetail.jobDataMap  = new JobDataMap(params)
