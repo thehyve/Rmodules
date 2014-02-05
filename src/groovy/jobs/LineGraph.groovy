@@ -66,9 +66,6 @@ class LineGraph extends AbstractAnalysisJob {
         binningConfigurator.keyForBinDistribution     = 'binDistributionGroupBy'
         binningConfigurator.keyForBinRanges           = 'binRangesGroupBy'
         binningConfigurator.keyForVariableType        = 'variableTypeGroupBy'
-
-        conceptTimeValues.conceptPaths = measurementConfigurator.getConceptPaths()
-        conceptTimeValues.enabledClosure = { -> !Boolean.parseBoolean(params.getProperty('plotEvenlySpaced')) }
     }
 
     @Override
@@ -90,7 +87,9 @@ class LineGraph extends AbstractAnalysisJob {
                 temporaryDirectory: temporaryDirectory)
 
         steps << new BuildConceptTimeValuesStep(
-                table: conceptTimeValues,
+                table: Boolean.parseBoolean(params.getProperty('plotEvenlySpaced'))
+                       ? null
+                       : conceptTimeValues.computeMap(measurementConfigurator.getConceptPaths()),
                 outputFile: new File(temporaryDirectory, SCALING_VALUES_FILENAME),
                 header: [ "GROUP", "VALUE" ]
         )

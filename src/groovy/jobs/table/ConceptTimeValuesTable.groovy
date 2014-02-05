@@ -17,20 +17,10 @@ class ConceptTimeValuesTable {
     @Autowired
     ConceptsResource conceptsResource
 
-    List<String> conceptPaths
-
-    Closure<Boolean> enabledClosure
-
-    @Lazy Map<String,Map> resultMap = computeMap()
-
     /**
      * @return map of concept_fullname -> series_meta map, or null if not enabled or metadata not applicable
      */
-    private Map<String,Map> computeMap() {
-
-        if (enabledClosure && !enabledClosure.call()) {
-            return null
-        }
+    Map<String,Map> computeMap(List<String> conceptPaths) {
 
         //get all the OntologyTerms for the concepts
         Set<OntologyTerm> terms = conceptPaths.collect {

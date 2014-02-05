@@ -1,14 +1,13 @@
 package jobs.steps
 
 import au.com.bytecode.opencsv.CSVWriter
-import jobs.table.ConceptTimeValuesTable
 
 /**
  * Created by carlos on 1/27/14.
  */
 class BuildConceptTimeValuesStep implements Step {
 
-    ConceptTimeValuesTable table
+    Map<String,Map> table
 
     String[] header
 
@@ -25,9 +24,8 @@ class BuildConceptTimeValuesStep implements Step {
         //makes sure the file is not there
         outputFile.delete()
 
-        Map<String,Map> map = table.resultMap
-        if (map != null) {
-            writeToFile(map)
+        if (table != null) {
+            writeToFile(table)
         }
     }
 
