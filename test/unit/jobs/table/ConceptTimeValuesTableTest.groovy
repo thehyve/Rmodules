@@ -2,6 +2,7 @@ package jobs.table
 
 import grails.test.mixin.TestMixin
 import grails.test.mixin.support.GrailsUnitTestMixin
+import jobs.steps.BuildConceptTimeValuesStep
 import org.gmock.GMockTestCase
 import org.junit.Before
 import org.junit.Test
@@ -14,7 +15,7 @@ import org.transmartproject.core.ontology.OntologyTerm
 @TestMixin(GrailsUnitTestMixin)
 class ConceptTimeValuesTableTest extends GMockTestCase {
 
-    ConceptTimeValuesTable table
+    BuildConceptTimeValuesStep table
 
     ConceptsResource conceptsResource
 
@@ -23,7 +24,7 @@ class ConceptTimeValuesTableTest extends GMockTestCase {
 
     @Before
     void setUp() {
-        table = new ConceptTimeValuesTable()
+        table = new BuildConceptTimeValuesStep()
         conceptsResource = mock(ConceptsResource)
         table.conceptsResource = conceptsResource
     }
@@ -95,7 +96,7 @@ class ConceptTimeValuesTableTest extends GMockTestCase {
     private OntologyTerm setConceptResourceKeyExpect(String path, Map metadata) {
         String fullname = "$path fullname"
         OntologyTerm ot = createMockOntologyTerm(fullname, metadata)
-        String key = ConceptTimeValuesTable.getConceptKey(path)
+        String key = BuildConceptTimeValuesStep.getConceptKey(path)
         conceptsResource.getByKey(key).returns(ot).stub()
         ot
     }
