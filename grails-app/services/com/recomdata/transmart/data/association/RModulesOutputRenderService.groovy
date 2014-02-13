@@ -141,7 +141,8 @@ class RModulesOutputRenderService {
                 //TODO move FileUtils to Core
                 FileUtils.copyFile(oldImage, newImage)
             } else {
-                oldImage.renameTo(newImage)
+                if (!oldImage.renameTo(newImage))
+					throw new IOException("Cannot rename $oldImage to $newImage");
             }
 
             String currentLink = "${imageURL}$jobName/${newFileName}"
