@@ -2,6 +2,7 @@ package jobs.table
 
 import grails.test.mixin.TestMixin
 import grails.test.mixin.support.GrailsUnitTestMixin
+import jobs.steps.BuildConceptTimeValuesStep
 import org.gmock.GMockTestCase
 import org.junit.Before
 import org.junit.Test
@@ -14,7 +15,7 @@ import org.transmartproject.core.ontology.OntologyTerm
 @TestMixin(GrailsUnitTestMixin)
 class ConceptTimeValuesTableTest extends GMockTestCase {
 
-    ConceptTimeValuesTable table
+    BuildConceptTimeValuesStep table
 
     ConceptsResource conceptsResource
 
@@ -23,10 +24,9 @@ class ConceptTimeValuesTableTest extends GMockTestCase {
 
     @Before
     void setUp() {
-        table = new ConceptTimeValuesTable()
+        table = new BuildConceptTimeValuesStep()
         conceptsResource = mock(ConceptsResource)
         table.conceptsResource = conceptsResource
-        table.conceptPaths = [] //concept paths starts empty, and will be filled by each test
     }
 
     @Test
@@ -35,24 +35,16 @@ class ConceptTimeValuesTableTest extends GMockTestCase {
         String unit = 'days'
         OntologyTerm ot1 = setConceptResourceKeyExpect(path1, unit, '1')
         OntologyTerm ot2 = setConceptResourceKeyExpect(path2, unit, '2')
+        def args = [path1, path2]
 
         play {
-            Map<String,Map> result = table.resultMap
+            Map<String,Map> result = table.computeMap(args)
             assertNotNull result
 
-            assertEquals table.conceptPaths.size(), result.size()
+            assertEquals args.size(), result.size()
             assertHasScalingEntry(result, ot1)
             assertHasScalingEntry(result, ot2)
         }
-    }
-
-    @Test
-    void testDisabled() {
-
-        table.conceptPaths << path1
-        table.conceptPaths << path2
-        table.enabledClosure = { false }
-        assertNoResult()
     }
 
     @Test
@@ -60,26 +52,26 @@ class ConceptTimeValuesTableTest extends GMockTestCase {
 
         OntologyTerm ot1 = setConceptResourceKeyExpect(path1, 'days', '1')
         OntologyTerm ot2 = setConceptResourceKeyExpect(path2, 'weeks', '2')
-        assertNoResult()
+        assertNoResult([path1, path2])
     }
 
     @Test
     void testFailWithNonNumericValue() {
 
-        OntologyTerm ot = setConceptResourceKeyExpect(path1, 'unit', 'string')
-        assertNoResult()
+        def args = setConceptResourceKeyExpect(path1, 'unit', 'string')
+        assertNoResult([path1])
     }
 
     @Test
     void testFailWithoutMetadata() {
 
         OntologyTerm ot1 = setConceptResourceKeyExpect(path1, null)
-        assertNoResult()
+        assertNoResult([path1])
     }
 
-    private void assertNoResult() {
+    private void assertNoResult(args) {
         play {
-            assertNull table.resultMap
+            assertNull table.computeMap(args)
         }
     }
 
@@ -102,11 +94,9 @@ class ConceptTimeValuesTableTest extends GMockTestCase {
     }
 
     private OntologyTerm setConceptResourceKeyExpect(String path, Map metadata) {
-        table.conceptPaths << path
-
         String fullname = "$path fullname"
         OntologyTerm ot = createMockOntologyTerm(fullname, metadata)
-        String key = ConceptTimeValuesTable.getConceptKey(path)
+        String key = BuildConceptTimeValuesStep.getConceptKey(path)
         conceptsResource.getByKey(key).returns(ot).stub()
         ot
     }

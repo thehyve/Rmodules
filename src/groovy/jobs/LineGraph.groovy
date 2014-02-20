@@ -6,7 +6,6 @@ import jobs.steps.*
 import jobs.steps.helpers.ContextNumericVariableColumnConfigurator
 import jobs.steps.helpers.OptionalBinningColumnConfigurator
 import jobs.steps.helpers.SimpleAddColumnConfigurator
-import jobs.table.ConceptTimeValuesTable
 import jobs.table.Table
 import jobs.table.columns.PrimaryKeyColumn
 import org.springframework.beans.factory.annotation.Autowired
@@ -32,9 +31,6 @@ class LineGraph extends AbstractAnalysisJob {
 
     @Autowired
     ContextNumericVariableColumnConfigurator measurementConfigurator
-
-    @Autowired
-    ConceptTimeValuesTable conceptTimeValues
 
     @Autowired
     Table table
@@ -66,9 +62,6 @@ class LineGraph extends AbstractAnalysisJob {
         binningConfigurator.keyForBinDistribution     = 'binDistributionGroupBy'
         binningConfigurator.keyForBinRanges           = 'binRangesGroupBy'
         binningConfigurator.keyForVariableType        = 'variableTypeGroupBy'
-
-        conceptTimeValues.conceptPaths = measurementConfigurator.getConceptPaths()
-        conceptTimeValues.enabledClosure = { -> !Boolean.parseBoolean(params.getProperty('plotEvenlySpaced')) }
     }
 
     @Override
@@ -89,11 +82,13 @@ class LineGraph extends AbstractAnalysisJob {
                 table:              table,
                 temporaryDirectory: temporaryDirectory)
 
-        steps << new BuildConceptTimeValuesStep(
-                table: conceptTimeValues,
-                outputFile: new File(temporaryDirectory, SCALING_VALUES_FILENAME),
-                header: [ "GROUP", "VALUE" ]
-        )
+        if (!Boolean.parseBoolean(params.getProperty('plotEvenlySpaced'))) {
+            steps << new BuildConceptTimeValuesStep(
+                    timeValuesConcepts: measurementConfigurator.getConceptPaths(),
+                    outputFile: new File(temporaryDirectory, SCALING_VALUES_FILENAME),
+                    header: [ "GROUP", "VALUE" ]
+            )
+        }
 
         Map<String, Closure<String>> extraParams = [:]
         extraParams['scalingFilename'] = { getScalingFilename() }
