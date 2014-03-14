@@ -127,7 +127,8 @@ class RModulesOutputRenderService {
         tempDirectoryFile.traverse(nameFilter: ~/(?i).*\.png/) { currentImageFile ->
             // Replace spaces with underscores, as Tomcat 6 is unable
             // to find files with spaces in their name
-            String newFileName = currentImageFile.name.replaceAll(/[^a-zA-Z1-9-_]/, "_")
+            // In fact: replace all characters NOT being alpha-numeric, hyphen, underscore or dot with an underscore
+            String newFileName = currentImageFile.name.replaceAll(/[^a-zA-Z0-9-_\.]/, "_")
             File oldImage = new File(currentImageFile.path),
                  newImage = new File(outputDirectory, newFileName);
             log.debug("Move or copy $oldImage to $newImage")
