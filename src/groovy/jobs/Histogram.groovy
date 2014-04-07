@@ -1,7 +1,5 @@
 package jobs
 
-import com.github.jmchilton.blend4j.galaxy.*
-import com.github.jmchilton.blend4j.galaxy.beans.*
 import jobs.steps.BuildTableResultStep
 import jobs.steps.ParametersFileStep
 import jobs.steps.SimpleDumpTableResultStep
@@ -10,6 +8,9 @@ import jobs.steps.helpers.NumericColumnConfigurator
 import jobs.steps.helpers.SimpleAddColumnConfigurator
 import jobs.table.Table
 import jobs.table.columns.PrimaryKeyColumn
+import nl.vumc.biomedbridges.v2.core.Workflow
+import nl.vumc.biomedbridges.v2.core.WorkflowEngine
+import nl.vumc.biomedbridges.v2.core.WorkflowFactory
 import org.codehaus.groovy.grails.commons.GrailsApplication
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Scope
@@ -24,7 +25,7 @@ import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
  * For now to make this job work you need 2 prerequisites:
  * 1. Register galaxy plugin with name 'Galaxy'(searchapp.plugin)
  * and plugin module (searchapp.plugin_module) with name 'histogram'
- * 2. Specify your galaxy api credentials: galaxy.instance and galaxy.api_key
+ * 2. Specify your galaxy api credentials (test.galaxy.instance and test.galaxy.key) in .blend.properties
  */
 @Component
 @Scope('job')
@@ -44,17 +45,11 @@ class Histogram extends AbstractAnalysisJob {
 
     final static GALAXY_WORKFLOW_ID = 'histogram'
     final static GALAXY_WORKFLOW_INPUT_TITLE = 'Input Dataset'
+    final String WORKFLOW_TYPE = WorkflowFactory.GALAXY_TYPE
 
-    private def thisJob = this
-
-    private GalaxyInstance galaxyInstance
-    private WorkflowsClient workflowsClient
-    private HistoriesClient historiesClient
-    private ToolsClient toolsClient
-
-    private String historyId
-    private WorkflowOutputs outputs
-    private Map<String, String> filenameIdMap = [:]
+    WorkflowEngine workflowEngine
+    Workflow workflow
+    Histogram thisJob = this
 
     @Override
     protected getForwardPath() {
@@ -81,62 +76,14 @@ class Histogram extends AbstractAnalysisJob {
         )
 
         steps << new Step() {
-            String statusName = 'Uploading to galaxy'
-
-            @Override
-            void execute() {
-                historyId = historiesClient.create(new History(thisJob.name)).id
-
-                thisJob.temporaryDirectory.eachFile {
-                    ToolExecution exec = toolsClient.upload(new ToolsClient.FileUploadRequest(historyId, it))
-                    filenameIdMap = filenameIdMap + exec.outputs.collectEntries { [(it.name): it.id] }
-                }
-                //TODO Find better way
-                while (!historiesClient.showHistory(historyId).ready) {
-                    Thread.sleep(1000)
-                }
-            }
-        }
-
-        steps << new Step() {
             String statusName = 'Running galaxy workflow'
 
             @Override
             void execute() {
-                WorkflowInputs inputs = new WorkflowInputs()
-                def workflows = workflowsClient.workflows
-                Workflow workflow = workflows.find { it.name == GALAXY_WORKFLOW_ID }
-                assert 'could not find workflow', workflow
-                WorkflowDetails workflowDetails = workflowsClient.showWorkflow(workflow.id)
-                def inputId = workflowDetails.inputs.find { it.value.label == GALAXY_WORKFLOW_INPUT_TITLE }.key
-
-                def input = new WorkflowInputs.WorkflowInput(filenameIdMap[DEFAULT_OUTPUT_FILE_NAME], WorkflowInputs.InputSourceType.HDA)
-                inputs.setInput(inputId, input)
-                inputs.destination = new WorkflowInputs.ExistingHistory(historyId)
-                inputs.workflowId = workflow.id
-
-                outputs = workflowsClient.runWorkflow(inputs)
-
-                //TODO Find better way
-                while (!historiesClient.showHistory(outputs.historyId).ready) {
-                    Thread.sleep(1000)
-                }
-            }
-        }
-
-        steps << new Step() {
-            String statusName = 'Downloading results from galaxy'
-
-            @Override
-            void execute() {
-                assert 'No output', outputs
-                outputs.outputIds.each { String outputId ->
-                    Dataset dataset = historiesClient.showDataset(historyId, outputId)
-                    def resultUrl = new URL("${galaxyInstance.galaxyUrl}/datasets/${dataset.id}/display/?to_ext=${dataset.dataType}")
-                    def out = new BufferedOutputStream(new FileOutputStream(new File(thisJob.temporaryDirectory, "${dataset.id}.${dataset.dataType}")))
-                    out << resultUrl.openStream()
-                    out.close()
-                }
+                workflow.addInput(GALAXY_WORKFLOW_INPUT_TITLE, new File(thisJob.temporaryDirectory, DEFAULT_OUTPUT_FILE_NAME))
+                workflowEngine.runWorkflow(workflow)
+                File outputFile = workflow.getOutput('output')
+                outputFile.renameTo(new File(thisJob.temporaryDirectory, outputFile.name))
             }
         }
 
@@ -146,14 +93,9 @@ class Histogram extends AbstractAnalysisJob {
     @PostConstruct
     void init() {
         //TODO Register plugin/plugin module automatically?
-        //Plugin.find
-        //def is = this.class.classLoader.getResourceAsStream("galaxy/workflows/${GALAXY_WORKFLOW_ID}.ga")
-        //TODO Ensure workflow is deployed to galaxy
 
-        galaxyInstance = GalaxyInstanceFactory.get(grailsApplication.config.galaxy.instance, grailsApplication.config.galaxy.api_key)
-        workflowsClient = galaxyInstance.workflowsClient
-        historiesClient = galaxyInstance.historiesClient
-        toolsClient = galaxyInstance.toolsClient
+        workflowEngine = WorkflowFactory.getWorkflowEngine(WORKFLOW_TYPE)
+        workflow = WorkflowFactory.getWorkflow(WORKFLOW_TYPE, GALAXY_WORKFLOW_ID)
 
         primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
 
