@@ -42,8 +42,12 @@ class Histogram extends AbstractAnalysisJob {
     @Autowired
     Table table
 
-    final static GALAXY_WORKFLOW_ID = 'histogram'
-    final static GALAXY_WORKFLOW_INPUT_TITLE = 'Input Dataset'
+    final static String GALAXY_WORKFLOW_NAME = 'histogram'
+    final static String WORKFLOW_DATA_FILE_INPUT_NAME = 'Input Dataset'
+    final static String WORKFLOW_TOOL_NAME = 'histogram_rpy'
+    final static String WORKFLOW_BREAKS_PARAM_NAME = 'breaks'
+    final static String WORKFLOW_TITLE_PARAM_NAME = 'title'
+    final static String WORKFLOW_X_LABLEL_PARAM_NAME = 'xlab'
 
     private def thisJob = this
 
@@ -105,13 +109,26 @@ class Histogram extends AbstractAnalysisJob {
             void execute() {
                 WorkflowInputs inputs = new WorkflowInputs()
                 def workflows = workflowsClient.workflows
-                Workflow workflow = workflows.find { it.name == GALAXY_WORKFLOW_ID }
-                assert 'could not find workflow', workflow
+                Workflow workflow = workflows.find { it.name == GALAXY_WORKFLOW_NAME }
+                assert "Could not find workflow with name '${GALAXY_WORKFLOW_NAME}'", workflow
                 WorkflowDetails workflowDetails = workflowsClient.showWorkflow(workflow.id)
-                def inputId = workflowDetails.inputs.find { it.value.label == GALAXY_WORKFLOW_INPUT_TITLE }.key
 
-                def input = new WorkflowInputs.WorkflowInput(filenameIdMap[DEFAULT_OUTPUT_FILE_NAME], WorkflowInputs.InputSourceType.HDA)
-                inputs.setInput(inputId, input)
+                def dataFileInputId = workflowDetails.inputs.find { it.value.label == WORKFLOW_DATA_FILE_INPUT_NAME }?.key
+                assert "Could not find '${WORKFLOW_DATA_FILE_INPUT_NAME}' input", dataFileInputId
+                def dataFileInput = new WorkflowInputs.WorkflowInput(filenameIdMap[DEFAULT_OUTPUT_FILE_NAME], WorkflowInputs.InputSourceType.HDA)
+                inputs.setInput(dataFileInputId, dataFileInput)
+
+                /*TODO Set parameters by specifying tool name is considered legacy and might be deprecated
+                it's suggested to use step id instead. Step id is changed each time after workflow has changed.
+                I could not find way to get step ids with blend4j. We might want to extend blend4j to support this functionality.
+                @see https://bitbucket.org/galaxy/galaxy-dist/src/29ce93a13ac7c4a5d2b54e5e2c10960f30a350b3/lib/galaxy/webapps/galaxy/api/workflows.py?at=default#cl-22
+                NOTE: There is just setParameter(String, ToolParameter) method in original blend4j. There was no way to
+                specify multiple parameters per step.
+                */
+                inputs.setParameter(WORKFLOW_TOOL_NAME, WORKFLOW_BREAKS_PARAM_NAME, thisJob.params['numOfBreaks'] ?: '0')
+                inputs.setParameter(WORKFLOW_TOOL_NAME, WORKFLOW_TITLE_PARAM_NAME, thisJob.params['plotTitle'] ?: '')
+                inputs.setParameter(WORKFLOW_TOOL_NAME, WORKFLOW_X_LABLEL_PARAM_NAME, thisJob.params['xLabel'] ?: '')
+
                 inputs.destination = new WorkflowInputs.ExistingHistory(historyId)
                 inputs.workflowId = workflow.id
 
@@ -147,7 +164,7 @@ class Histogram extends AbstractAnalysisJob {
     void init() {
         //TODO Register plugin/plugin module automatically?
         //Plugin.find
-        //def is = this.class.classLoader.getResourceAsStream("galaxy/workflows/${GALAXY_WORKFLOW_ID}.ga")
+        //def is = this.class.classLoader.getResourceAsStream("galaxy/workflows/${GALAXY_WORKFLOW_NAME}.ga")
         //TODO Ensure workflow is deployed to galaxy
 
         galaxyInstance = GalaxyInstanceFactory.get(grailsApplication.config.galaxy.instance, grailsApplication.config.galaxy.api_key)

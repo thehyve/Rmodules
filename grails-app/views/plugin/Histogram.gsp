@@ -17,6 +17,12 @@
                     <button type="button" onclick="histogramView.clear_high_dimensional_input('divDataNode');">Clear</button>
                 </div>
             </div>
+            <label>Number of breaks (bars):</label>
+            <input type="text" id="numOfBreaks" value="0"/>
+            <label>Plot title:</label>
+            <input type="text" id="plotTitle" value="Title"/>
+            <label>Label for x axis:</label>
+            <input type="text" id="xLabel" value="X"/>
         </fieldset>
         <fieldset class="toolFields">
             <input type="button" value="Run" onClick="histogramView.submit_job(this.form);" class="runAnalysisBtn">

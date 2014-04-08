@@ -48,8 +48,11 @@ grails.project.dependency.resolution = {
     log "warn"
 
     repositories {
+        mavenRepo([
+                name: 'repo.thehyve.nl-releases',
+                url: 'https://repo.thehyve.nl/content/repositories/releases/',
+        ])
         grailsCentral()
-
         mavenCentral()
         mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
     }
@@ -68,8 +71,8 @@ grails.project.dependency.resolution = {
             transitive = false /* don't bring groovy-all */
             export     = false
         }
-        //Galaxy
-        runtime 'com.github.jmchilton.blend4j:blend4j:0.1-alpha-7'
+        //Added support for multiple parameters
+        runtime 'com.github.jmchilton.blend4j:blend4j:0.1-alpha-9-HYVE'
 
         test('org.hamcrest:hamcrest-library:1.3',
                 'org.hamcrest:hamcrest-core:1.3') {
