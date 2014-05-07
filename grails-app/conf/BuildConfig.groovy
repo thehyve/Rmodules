@@ -49,8 +49,8 @@ grails.project.dependency.resolution = {
 
     repositories {
         grailsCentral()
-
         mavenCentral()
+        mavenRepo 'https://repo.thehyve.nl/content/repositories/public/'
         mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
     }
     dependencies {
@@ -61,6 +61,9 @@ grails.project.dependency.resolution = {
         /* serializable ImmutableMap only on guava 16 */
         compile group: 'com.google.guava', name: 'guava', version: '16.0-dev-20140115-68c8348'
         compile 'org.transmartproject:transmart-core-api:1.0-SNAPSHOT'
+        compile('nl.vumc.biomedbridges:WorkflowRunner:0.1.0-SNAPSHOT') {
+            excludes 'slf4j-log4j12'
+        }
 
         /* compile instead of test due to technical limitations
          * (referenced from resources.groovy) */
@@ -68,8 +71,6 @@ grails.project.dependency.resolution = {
             transitive = false /* don't bring groovy-all */
             export     = false
         }
-        //Galaxy
-        runtime 'com.github.jmchilton.blend4j:blend4j:0.1-alpha-7'
 
         test('org.hamcrest:hamcrest-library:1.3',
                 'org.hamcrest:hamcrest-core:1.3') {

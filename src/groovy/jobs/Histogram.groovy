@@ -8,9 +8,10 @@ import jobs.steps.helpers.NumericColumnConfigurator
 import jobs.steps.helpers.SimpleAddColumnConfigurator
 import jobs.table.Table
 import jobs.table.columns.PrimaryKeyColumn
-import nl.vumc.biomedbridges.v2.core.Workflow
-import nl.vumc.biomedbridges.v2.core.WorkflowEngine
-import nl.vumc.biomedbridges.v2.core.WorkflowFactory
+import nl.vumc.biomedbridges.core.Workflow
+import nl.vumc.biomedbridges.core.WorkflowEngine
+import nl.vumc.biomedbridges.core.WorkflowEngineFactory
+import nl.vumc.biomedbridges.galaxy.configuration.GalaxyConfiguration
 import org.codehaus.groovy.grails.commons.GrailsApplication
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Scope
@@ -21,11 +22,8 @@ import javax.annotation.PostConstruct
 import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 
 /**
- * Note: It's work in progress.
- * For now to make this job work you need 2 prerequisites:
- * 1. Register galaxy plugin with name 'Galaxy'(searchapp.plugin)
+ * Note: Remember to register galaxy plugin with name 'Galaxy'(searchapp.plugin)
  * and plugin module (searchapp.plugin_module) with name 'histogram'
- * 2. Specify your galaxy api credentials (test.galaxy.instance and test.galaxy.key) in .blend.properties
  */
 @Component
 @Scope('job')
@@ -43,9 +41,12 @@ class Histogram extends AbstractAnalysisJob {
     @Autowired
     Table table
 
-    final static GALAXY_WORKFLOW_ID = 'histogram'
-    final static GALAXY_WORKFLOW_INPUT_TITLE = 'Input Dataset'
-    final String WORKFLOW_TYPE = WorkflowFactory.GALAXY_TYPE
+    final static String GALAXY_WORKFLOW_NAME = 'histogram'
+    final static String WORKFLOW_DATA_FILE_INPUT_NAME = 'Input Dataset'
+    final static int HISTOGRAM_STEP_ID = 1
+    final static String WORKFLOW_BREAKS_PARAM_NAME = 'breaks'
+    final static String WORKFLOW_TITLE_PARAM_NAME = 'title'
+    final static String WORKFLOW_X_LABLEL_PARAM_NAME = 'xlab'
 
     WorkflowEngine workflowEngine
     Workflow workflow
@@ -80,10 +81,17 @@ class Histogram extends AbstractAnalysisJob {
 
             @Override
             void execute() {
-                workflow.addInput(GALAXY_WORKFLOW_INPUT_TITLE, new File(thisJob.temporaryDirectory, DEFAULT_OUTPUT_FILE_NAME))
+                workflow.addInput(WORKFLOW_DATA_FILE_INPUT_NAME, new File(thisJob.temporaryDirectory, DEFAULT_OUTPUT_FILE_NAME))
+                workflow.setParameter(HISTOGRAM_STEP_ID, WORKFLOW_BREAKS_PARAM_NAME, thisJob.params['numOfBreaks'] ?: '0')
+                workflow.setParameter(HISTOGRAM_STEP_ID, WORKFLOW_TITLE_PARAM_NAME, thisJob.params['plotTitle'] ?: '')
+                workflow.setParameter(HISTOGRAM_STEP_ID, WORKFLOW_X_LABLEL_PARAM_NAME, thisJob.params['xLabel'] ?: '')
                 workflowEngine.runWorkflow(workflow)
-                File outputFile = workflow.getOutput('output')
-                outputFile.renameTo(new File(thisJob.temporaryDirectory, outputFile.name))
+                def outputs = workflow.getOutputMap()
+                outputs.each {
+                    if(it.value instanceof File) {
+                        it.value.renameTo(new File(thisJob.temporaryDirectory, it.value.name))
+                    }
+                }
             }
         }
 
@@ -92,10 +100,14 @@ class Histogram extends AbstractAnalysisJob {
 
     @PostConstruct
     void init() {
-        //TODO Register plugin/plugin module automatically?
+        def galaxyInstanceUrl = grailsApplication.config.galaxy.instance_url
+        def apiKey = grailsApplication.config.galaxy.api_key
+        assert 'Galaxy credentials are not specified', galaxyInstanceUrl && apiKey
 
-        workflowEngine = WorkflowFactory.getWorkflowEngine(WORKFLOW_TYPE)
-        workflow = WorkflowFactory.getWorkflow(WORKFLOW_TYPE, GALAXY_WORKFLOW_ID)
+        def historyName = params['jobName']
+        String configuration = GalaxyConfiguration.buildConfiguration(galaxyInstanceUrl, apiKey, historyName)
+        workflowEngine = WorkflowEngineFactory.getWorkflowEngine(WorkflowEngineFactory.GALAXY_TYPE, configuration)
+        workflow = workflowEngine.getWorkflow(GALAXY_WORKFLOW_NAME)
 
         primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
 
