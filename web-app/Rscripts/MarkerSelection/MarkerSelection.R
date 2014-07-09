@@ -22,7 +22,8 @@ MS.loader <- function(
 input.filename,
 output.file ="CMS.TXT",
 numberOfPermutations = 5000,
-numberOfMarkers = 100
+numberOfMarkers = 100,
+aggregate.probes = FALSE
 )
 {
 	##########################################
@@ -198,15 +199,13 @@ numberOfMarkers = 100
 	geneStatsData <- merge(geneStatsData,S1SD,by=c('GENE_SYMBOL','PROBE.ID'))
 	geneStatsData <- merge(geneStatsData,S2SD,by=c('GENE_SYMBOL','PROBE.ID'))
 	#---------------------		
-	
-	#---------------------
+
 	#FOLD CHANGE
-	
-	#The fold change is the S1 Mean divided by the S2 Mean.
-	geneStatsData$FoldChange <- geneStatsData$S1.Mean/geneStatsData$S2.Mean
-	#---------------------	
-	
-	#---------------------
+    print("Calculating estimation of fold change relative to S1, using base2 exponentiation as zscore are calculated from log2 values");
+    geneStatsData$FoldChange.relative.to.S1 <- ifelse ((geneStatsData$S1.Mean >= geneStatsData$S2.Mean),
+        -1*2^(geneStatsData$S1.Mean - geneStatsData$S2.Mean),
+        2^(geneStatsData$S2.Mean - geneStatsData$S1.Mean))
+
 	#HEATMAP
 
 	#Get a copy of the data.
@@ -228,9 +227,14 @@ numberOfMarkers = 100
 
 	#Put all the data together.
 	finalHeatmapData <- rbind(negativeHeatmapData,positiveHeatmapData)
-	
+
+    # The PROBE.ID column needs to have the values from GENE_SYMBOL concatenated as a suffix,
+    # but only if the latter does not contain a private value (which means that the biomarker was not present in any of the dictionaries)
+    rowsToConcatenate <- grep("^PRIVATE:", finalHeatmapData$GENE_SYMBOL, invert = TRUE)
+    finalHeatmapData$PROBE.ID[rowsToConcatenate] <- paste(finalHeatmapData$PROBE.ID[rowsToConcatenate], finalHeatmapData$GENE_SYMBOL[rowsToConcatenate],sep="_")
+
 	#Remove the t score and positive columns.
-	finalHeatmapData <- subset(finalHeatmapData, select = -c(GENE_SYMBOL,t,positive,S1.Mean,S2.Mean,S1.SD,S2.SD,FoldChange,RANK,rawp,Bonferroni,Holm,Hochberg,SidakSS,SidakSD,BH,BY,t.permutation,rawp.permutation,adjp.permutation))
+	finalHeatmapData <- subset(finalHeatmapData, select = -c(GENE_SYMBOL,t,positive,S1.Mean,S2.Mean,S1.SD,S2.SD,FoldChange.relative.to.S1,RANK,rawp,Bonferroni,Holm,Hochberg,SidakSS,SidakSD,BH,BY,t.permutation,rawp.permutation,adjp.permutation))
 	
 	#Rename the first column to be "GROUP".
 	colnames(finalHeatmapData)[1] <- 'GROUP'

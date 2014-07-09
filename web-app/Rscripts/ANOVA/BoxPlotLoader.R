@@ -29,6 +29,8 @@ BoxPlot.loader <- function(
   concept.independent.type = "",
   genes.dependent = "",
   genes.independent = "",
+  aggregate.probes.independent = FALSE,
+  aggregate.probes.dependent = FALSE,
   binning.enabled = FALSE,
   binning.variable = "IND",
   binning.manual = FALSE,
@@ -75,6 +77,14 @@ BoxPlot.loader <- function(
 	
 	#Reapply the factor to get the items in the right order.
 		line.data$X <- factor(line.data$X,factorDataFrame$binname,ordered = TRUE)
+	}
+
+	#If the image is flipped, columns GROUP and GROUP.1 should be inverted
+	if(flipimage)
+	{
+        columnNames <- colnames(line.data)
+        colnames(line.data)[which(columnNames == "GROUP")] <- "GROUP.1"
+        colnames(line.data)[which(columnNames == "GROUP.1")] <- "GROUP"
 	}
 	
 	#If we are generating statistics per group, we apply the stats function after splitting the groups.
@@ -142,6 +152,7 @@ calculateANOVA <- function(splitData,splitColumn,fileNameQualifier)
 	
 	#If we have a qualifier we need to throw a "_" after the name of the file.
 	if(fileNameQualifier != '') fileNameQualifier <- paste('_',fileNameQualifier,sep="");
+	fileNameQualifier <- gsub(" (.*)$", "",fileNameQualifier, perl=TRUE)
 	
 	#The filename for the summary stats file.
 	summaryFileName <- paste("ANOVA_RESULTS",fileNameQualifier,".txt",sep="")
@@ -151,11 +162,12 @@ calculateANOVA <- function(splitData,splitColumn,fileNameQualifier)
 	
 	#We need to get the p-value for this ANOVA.
 	#Run the ANOVA
+	if (length(levels(splitData$X)) <=1 ) stop("Dependent variables must contain at least 2 levels (must contain multiple groups).")
 	dataChunk.aov <- aov(Y~X,data=splitData)
 
 	#Get a summary of the ANOVA
 	summaryAnova <- summary(dataChunk.aov)
-
+    
 	#If we have a group column we should write the group name to the file.
 	if(splitColumn %in% colnames(splitData)) write(paste("name=",currentGroup,sep=""), file=summaryFileName,append=T)
 	
@@ -242,6 +254,7 @@ graphSubset <- function(currentGroup,
 {
 	#Get the name of the group.
 	trimmedGroupName <- gsub("^\\s+|\\s+$", "",currentGroup)
+	trimmedGroupName <- gsub(" (.*)$", "",trimmedGroupName, perl=TRUE)
 	
 	#If we don't have a group, graph all the data.
 	if(trimmedGroupName != '') dataToGraph <- dataToGraph[[currentGroup]]
@@ -270,17 +283,17 @@ graphSubset <- function(currentGroup,
 		tmp <- tmp + xlab(xAxisLabel)
 		
 		#Set the font for the x axis title.
-		tmp <- tmp + opts(axis.title.x=theme_text(size = 15,face="bold"))		
+		tmp <- tmp + theme(axis.title.x=element_text(size = 15,face="bold"))		
 		
 		#Set the fonts for the axis labels.
-		tmp <- tmp + opts(axis.text.y = theme_text(size = 15,face="bold"))
-		tmp <- tmp + opts(axis.text.x = theme_text(size = 10,face="bold"))
+		tmp <- tmp + theme(axis.text.y = element_text(size = 15,face="bold"))
+		tmp <- tmp + theme(axis.text.x = element_text(size = 10,face="bold"))
 		
 		#Flip the image.
 		tmp <- tmp + coord_flip()
 		
 		#Set the font size for the legend.
-		tmp <- tmp + opts(legend.text = theme_text(size = 9,hjust=0))
+		tmp <- tmp + theme(legend.text = element_text(size = 9,hjust=0))
 		
 		#Get the device ready for printing and create the image file.
 		CairoPNG(file=paste(output.file,"_",trimmedGroupName,".png",sep=""),width=800,height=800)
@@ -309,14 +322,14 @@ graphSubset <- function(currentGroup,
 		tmp <- tmp + xlab(xAxisLabel)		
 		
 		#Set the font for the y axis title.
-		tmp <- tmp + opts(axis.title.y=theme_text(size = 15,face="bold", angle=90))
+		tmp <- tmp + theme(axis.title.y=element_text(size = 15,face="bold", angle=90))
 		
 		#Set the fonts for the axis labels.
-		tmp <- tmp + opts(axis.text.x = theme_text(size = 15,face="bold",angle=15))
-		tmp <- tmp + opts(axis.text.y = theme_text(size = 10,face="bold"))
+		tmp <- tmp + theme(axis.text.x = element_text(size = 15,face="bold",angle=15))
+		tmp <- tmp + theme(axis.text.y = element_text(size = 10,face="bold"))
 		
 		#Set the font size for the legend.
-		tmp <- tmp + opts(legend.text = theme_text(size = 9,hjust=0))
+		tmp <- tmp + theme(legend.text = element_text(size = 9,hjust=0))
 		
 		#Get the device ready for printing and create the image file.
 		CairoPNG(file=paste(output.file,"_",trimmedGroupName,".png",sep=""),width=800,height=800)

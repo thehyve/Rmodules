@@ -22,6 +22,7 @@ WaterfallPlot.loader <- function
 (
 	input.filename='outputfile',
 	concept='',
+	aggregate.probes = FALSE,
 	output.file ="Waterfall"
 )
 {
@@ -29,7 +30,7 @@ WaterfallPlot.loader <- function
 	library(Cairo)
 	
 	#Pull the data for the histogram.
-	line.data<-read.delim('outputfile',header=T)
+	line.data<-read.delim(input.filename,header=T)
 
 	#Order the data by the x column.
 	line.data <- line.data[order(line.data$X),]
@@ -44,19 +45,19 @@ WaterfallPlot.loader <- function
 	yAxisLabel <- sub(pattern="^\\\\(.*?\\\\){3}",replacement="",x=concept,perl=TRUE)
 
 	#Remove spaces from fill column.
-	line.data$FILL_COLUMN <- gsub("^\\s+|\\s+$", "",line.data$FILL_COLUMN)
+	line.data$GROUP <- gsub("^\\s+|\\s+$", "",line.data$GROUP)
 	
 	#Set the fill column factor to have the correct order (follows the scale_fill_manual below).
-	line.data$FILL_COLUMN <- factor(line.data$FILL_COLUMN, levels = c("BASE","LOW","HIGH"))
+	line.data$GROUP <- factor(line.data$GROUP, levels = c("BASE","LOW","HIGH"))
 
 	#Set up the basic plot.
-	tmp <- ggplot(line.data, aes(PATIENT_NUM,fill=FILL_COLUMN)) 
+	tmp <- ggplot(line.data, aes(PATIENT_NUM,fill=GROUP)) 
 	
 	#Add the bars.
 	tmp <- tmp + geom_rect(aes(x = PATIENT_NUM,ymin = 0, ymax = X,xmin=id - .45, xmax = id + .45))
 	
 	#Tilt the axis labels.
-	tmp <- tmp + opts(axis.text.x = theme_text(size = 13,angle=90))
+	tmp <- tmp + theme(axis.text.x = element_text(size = 13,angle=90))
 	
 	#Set the x label.
 	tmp <- tmp + xlab('Patient Identifier') 

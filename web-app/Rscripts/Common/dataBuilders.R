@@ -44,10 +44,11 @@ conceptColumn = FALSE
 )
 {
 	print("     -------------------")
+	print(Sys.time())
 	print("     dataBuilders.R")
-	print("     BUILDING DATA")
+	sprintf("     BUILDING DATA: %s", concept.type)
 	
-	#Depedning on the type of data we are using we use a different extraction method.
+	#Depending on the type of data we are using we use a different extraction method.
 	if(concept.type == "CLINICAL")
 	{
 		#Extract the concepts from the clinical data file.
@@ -56,12 +57,12 @@ conceptColumn = FALSE
 	else if(concept.type == "MRNA")
 	{
 		axisValueMatrix <- gexBuilder(	GEXFile = GEXFile,
-										sampleType = sampleType,
-										timepointType = timepointType,
-										tissueType = tissueType,
-										platform.type = platform.type,
-										gene.list = gene.list,
-										gene.aggregate = gene.aggregate)
+						sampleType = sampleType,
+						timepointType = timepointType,
+						tissueType = tissueType,
+						platform.type = platform.type,
+						gene.list = gene.list,
+						gene.aggregate = gene.aggregate)
 	}
 	else if(concept.type == "SNP")
 	{
@@ -142,7 +143,7 @@ GEXData = ''
 	}
 	
 	#This tells us which column to use for the value when collapsing.
-	columnToCollapse <- "VALUE"
+	columnToCollapse <- "ZSCORE"
 	
 	#Filter the data based on the gene,sample,timepoint and tissue type.
 	mrnaData <- filterData(dataToFilter = mrnaData,
@@ -162,7 +163,7 @@ GEXData = ''
 	if(probe.average)
 	{
 		mrnaData <- probeAverage(mrnaData)
-		columnToCollapse <- "VALUE"
+		columnToCollapse <- "ZSCORE"
 	}
 	
 	#If we reduce the number of columns in the data, do it here.
@@ -294,7 +295,7 @@ function
 	mrnaData <- data.table(mrnaData)
 	
 	#Aggregate and return the mean expression value and max probe id.
-	mrnaData <- mrnaData[,list(VALUE = median(VALUE),ASSAY.ID = max(ASSAY.ID)), by = "PATIENT.ID,PROBE.ID,GENE_SYMBOL,SUBSET"]
+	mrnaData <- mrnaData[,list(ZSCORE = median(ZSCORE),ASSAY.ID = max(ASSAY.ID)), by = "PATIENT.ID,PROBE.ID,GENE_SYMBOL,SUBSET"]
 	
 	#Convert back to a data.frame.
 	mrnaData <- data.frame(mrnaData)

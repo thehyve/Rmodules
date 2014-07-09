@@ -1,4 +1,8 @@
-/*************************************************************************   
+import com.google.common.collect.ImmutableMap
+import org.springframework.beans.factory.config.CustomScopeConfigurer
+import org.springframework.stereotype.Component
+
+/*************************************************************************
 * Copyright 2008-2012 Janssen Research & Development, LLC.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +20,9 @@
 
 class RdcRmodulesGrailsPlugin {
     // the plugin version
-    def version = "0.1"
+    def version = "0.3-rc2_dev-SNAPSHOT"
     // the version or versions of Grails the plugin is designed for
-    def grailsVersion = "1.3.7 > *"
+    def grailsVersion = "2.2.4 > *"
     // the other plugins this plugin depends on
     def dependsOn = [:]
     // resources that are excluded from plugin packaging
@@ -38,11 +42,36 @@ Brief description of the plugin.
     def documentation = "http://grails.org/plugin/rmodules"
 
     def doWithWebDescriptor = { xml ->
-        // TODO Implement additions to web.xml (optional), this event occurs before 
+        // TODO Implement additions to web.xml (optional), this event occurs before
     }
 
     def doWithSpring = {
-        // TODO Implement runtime spring config (optional)
+        xmlns context: 'http://www.springframework.org/schema/context'
+
+        context.'component-scan'('base-package': 'jobs') {
+            context.'include-filter'(
+                    type:       'annotation',
+                    expression: Component.canonicalName)
+        }
+
+        jobScopeConfigurer(CustomScopeConfigurer) {
+            scopes = ImmutableMap.of('job', ref('jobSpringScope'))
+        }
+
+        jobName(String) { bean ->
+            /* this bean is actually created manually and put
+             * in the storage for the job scope */
+            bean.scope = 'job'
+        }
+
+        /*
+         * Prevent the resource plugin from handling the resources in this
+         * so that it can be served directly.
+         */
+        def curExcludes = application.config.grails.resources.adhoc.excludes
+        application.config.grails.resources.adhoc.excludes =
+                ['/analysisFiles/**', '/images/analysisFiles/**'] +
+                        (curExcludes ?: [])
     }
 
     def doWithDynamicMethods = { ctx ->

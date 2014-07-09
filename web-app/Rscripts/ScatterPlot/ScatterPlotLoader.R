@@ -28,6 +28,8 @@ ScatterPlot.loader <- function(
   concept.independent.type = "",
   genes.dependent = "",
   genes.independent = "",
+  aggregate.probes.independent = FALSE,
+  aggregate.probes.dependent = FALSE,
   snptype.dependent = "",
   snptype.independent = ""  
   )
@@ -36,6 +38,7 @@ ScatterPlot.loader <- function(
 	library(plyr)
 	library(ggplot2)
 	library(Cairo)
+	require(RColorBrewer)
 	
 	#Clean the gene names if they have spaces.
 	genes.dependent <- gsub("^\\s+|\\s+$", "",genes.dependent)
@@ -64,7 +67,7 @@ ScatterPlot.loader <- function(
 			#Pull the records into another object.
 			currentGroupingData <- line.data[currentIndex,]
 			
-			trimmedGroupName <- gsub("^\\s+|\\s+$", "",currentGroup)
+			trimmedGroupName <- gsub("^\\s+|\\s+$| \\(.*\\)$", "",currentGroup)
 
 			#This is the filename for this group.
 			fileName <- paste("LinearRegression_",trimmedGroupName,".txt",sep="")
@@ -100,11 +103,6 @@ ScatterPlot.loader <- function(
 	{
 		yAxisLabel <- sub(pattern="^\\\\(.*?\\\\){3}",replacement="",x=concept.dependent,perl=TRUE)	
 	}
-	else if(concept.dependent.type == "MRNA")
-	{
-		yAxisDataTypeUnit <- "Gene Expression (normalized intensity)";
-		yAxisLabel <- paste(genes.dependent,yAxisDataTypeUnit,sep=" ")
-	}
 	else if(concept.dependent.type == "SNP")
 	{
 		if(snptype.dependent == "CNV")
@@ -118,15 +116,14 @@ ScatterPlot.loader <- function(
 		
 		yAxisLabel <- paste(genes.dependent,yAxisDataTypeUnit,sep=" ")		
 	}
+	else {
+		yAxisDataTypeUnit <- "High Dimensional Data";
+		yAxisLabel <- paste(genes.dependent,yAxisDataTypeUnit,sep=" ")
+	}
 	
 	if(concept.independent.type == "CLINICAL")
 	{
 		xAxisLabel <- sub(pattern="^\\\\(.*?\\\\){3}",replacement="",x=concept.independent,perl=TRUE)
-	}
-	else if(concept.independent.type == "MRNA")
-	{
-		xAxisDataTypeUnit <- "Gene Expression (normalized intensity)"
-		xAxisLabel <- paste(genes.independent,xAxisDataTypeUnit,sep=" ")
 	}
 	else if(concept.independent.type == "SNP")
 	{
@@ -140,7 +137,11 @@ ScatterPlot.loader <- function(
 		}
 		
 		xAxisLabel <- paste(genes.independent,xAxisDataTypeUnit,sep=" ")
-	}	
+	} else
+	{
+		xAxisDataTypeUnit <- "High Dimensional Data"
+		xAxisLabel <- paste(genes.independent,xAxisDataTypeUnit,sep=" ")
+	}
 	
 	#If there is a group column, make sure we set the graph up to use it to change the color of the points, as well as the shape.
 	#If there is a GROUP.1 that means we have more than one group column so we need to break it out into different graphs.
@@ -149,7 +150,7 @@ ScatterPlot.loader <- function(
 		#Create the function that actually does the graphing.
 		graphSubset <- function(currentGroup,dataToGraph)
 		{
-			trimmedGroupName <- gsub("^\\s+|\\s+$", "",currentGroup)
+			trimmedGroupName <- gsub("^\\s+|\\s+$| \\(.*\\)$", "",currentGroup)
 			
 			CairoPNG(file=paste(output.file,"_",trimmedGroupName,".png",sep=""),width=800,height=800)
 			
@@ -163,16 +164,19 @@ ScatterPlot.loader <- function(
 				modifiedXAxisLabel <- paste(genes.independent,trimmedGroupName,xAxisDataTypeUnit,sep=" ")
 			}
 			
-			tmp <- ggplot(dataToGraph[[currentGroup]], aes(X, Y)) 
-			tmp <- tmp + theme_bw() 
-			tmp <- tmp + geom_point(size = 4) 
-			tmp <- tmp + stat_smooth(method="lm", se=FALSE,size=1.25) 
-			tmp <- tmp + aes(colour = GROUP.1) 
-			tmp <- tmp + aes(shape = GROUP.1) 
-			tmp <- tmp + scale_shape_manual(values=1:20)
-			tmp <- tmp + scale_colour_brewer("GROUP.1")
-			tmp <- tmp + scale_x_continuous(modifiedXAxisLabel) 
-			tmp <- tmp + scale_y_continuous(yAxisLabel)
+            noColors <- 9
+            shapesToUse <- c(15:19, 1:5)
+            noPoints <- nrow(dataToGraph[[currentGroup]])
+            tmp <- ggplot(dataToGraph[[currentGroup]], aes(X, Y))
+            tmp <- tmp + aes(colour = GROUP.1)
+            tmp <- tmp + theme_bw()
+            tmp <- tmp + geom_point(size = 4)
+            tmp <- tmp + aes(shape = GROUP.1)
+            tmp <- tmp + stat_smooth(method="lm", se=FALSE,size=1.25)
+            tmp <- tmp + scale_colour_manual(values = rep_len(brewer.pal(noColors, "Set1"), length.out = noPoints))
+            tmp <- tmp + scale_shape_manual(values = rep_len(shapesToUse, length.out = noPoints))
+            tmp <- tmp + scale_x_continuous(modifiedXAxisLabel)
+            tmp <- tmp + scale_y_continuous(yAxisLabel)
 			
 			print(tmp)
 			dev.off()
@@ -186,15 +190,19 @@ ScatterPlot.loader <- function(
 	{
 		CairoPNG(file=paste(output.file,".png",sep=""),width=800,height=800)
 		
-		tmp <- ggplot(line.data, aes(X, Y)) 
-		tmp <- tmp + theme_bw() 
-		tmp <- tmp + geom_point(size = 4) 
-		tmp <- tmp + stat_smooth(method="lm", se=FALSE,size=1.25) 
-		tmp <- tmp + aes(colour = GROUP) 
-		tmp <- tmp + aes(shape = GROUP) 
-		tmp <- tmp + scale_shape_manual(values=1:20)
-		tmp <- tmp + scale_x_continuous(xAxisLabel) 
-		tmp <- tmp + scale_y_continuous(yAxisLabel)
+        noColors <- 9
+        shapesToUse <- c(15:19, 1:5)
+        noPoints <- nrow(line.data)
+        tmp <- ggplot(line.data, aes(X, Y))
+        tmp <- tmp + theme_bw()
+        tmp <- tmp + aes(colour = GROUP)
+        tmp <- tmp + aes(shape = GROUP)
+        tmp <- tmp + geom_point(size = 4)
+        tmp <- tmp + stat_smooth(method="lm", se=FALSE,size=1.25)
+        tmp <- tmp + scale_colour_manual(values = rep_len(brewer.pal(noColors, "Set1"), length.out = noPoints))
+        tmp <- tmp + scale_shape_manual(values = rep_len(shapesToUse, length.out = noPoints))
+        tmp <- tmp + scale_x_continuous(xAxisLabel)
+        tmp <- tmp + scale_y_continuous(yAxisLabel)
 		
 		print (tmp)
 		dev.off()

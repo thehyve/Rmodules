@@ -81,7 +81,7 @@ class MarkerSelectionController {
 							<th>S2 Mean</th>
 							<th>S1 SD</th>
 							<th>S2 SD</th>
-							<th>Fold Change</th>
+							<th>Fold Change (relative to S1)</th>
 						</tr>
 						</thead>
 						"""
@@ -97,8 +97,8 @@ class MarkerSelectionController {
 			//Every line but the first in the file gets written to the table.
 			if(!firstLine)
 			{
-				//Split the current line.
-				String[] resultArray = it.split();
+				//Split the current line (tabs) and trim the entries
+				String[] resultArray = it.split("\t").collect { it.trim() }
 				
 				String tableRow = """\
 						<tr>

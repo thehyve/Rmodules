@@ -16,19 +16,26 @@
 
 package com.recomdata.transmart.data.association
 
-import org.codehaus.groovy.grails.commons.ConfigurationHolder;
-import org.quartz.JobDataMap;
-import org.quartz.JobDetail;
-import org.quartz.SimpleTrigger;
-
-import com.recomdata.transmart.data.association.asynchronous.RModulesJobService;
-
+import com.recomdata.transmart.data.association.asynchronous.RModulesJobService
+import org.codehaus.groovy.grails.commons.ConfigurationHolder
+import org.quartz.JobDataMap
+import org.quartz.JobDetail
+import org.quartz.SimpleTrigger
 
 class RModulesService {
 
     static transactional = true
 	static scope = 'request'
-	
+
+    static STATUS_LIST = [
+            "Started",
+            "Validating Cohort Information",
+            "Triggering Data-Export Job",
+            "Gathering Data",
+            "Running Conversions",
+            "Running Analysis",
+            "Rendering Output"]
+
 	/**
 	* quartzScheduler is available from the Quartz grails-plugin
 	*/
@@ -53,12 +60,7 @@ class RModulesService {
 	 * @return
 	 */
 	def private setJobStatusList(params) {
-		def moduleName = params.jobType
-		//if (StringUtils.isNotEmpty(moduleName)) {
-		//	jobStatusList = config.RModules.'$moduleName'.statusList
-		//} else {
-			jobStatusList = config.RModules.defaultStatusList
-		//}
+        jobStatusList = STATUS_LIST
 		
 		//Set the status list and update the first status.
 		jobResultsService[params.jobName]["StatusList"] = jobStatusList
@@ -158,7 +160,7 @@ class RModulesService {
 		jobDataMap.put("analysis", params.analysis)
 		jobDataMap.put("userName", userName)
 		jobDataMap.put("jobName", params.jobName)
-		
+
 		//Each subset needs a name and a RID. Put this info in a hash.
 		def resultInstanceIdHashMap = [:]
 		resultInstanceIdHashMap["subset1"] = params.result_instance_id1
@@ -169,10 +171,10 @@ class RModulesService {
 		//We need to get module information.
 		def pluginModuleInstance = pluginService.findPluginModuleByModuleName(params.analysis)
 		
-		def InputStream textStream = pluginModuleInstance?.params?.getAsciiStream()
-		def moduleMap, moduleMapStr = null
+		def moduleMap = null
+		def moduleMapStr = pluginModuleInstance?.paramsStr
+		
 		try {
-			moduleMapStr = pluginService.convertStreamToString(textStream).replace('\n',' ')
 			moduleMap = new org.codehaus.groovy.grails.web.json.JSONObject(moduleMapStr) as Map
 		} catch (Exception e) {
 			log.error('Module '+params.analysis+' params could not be loaded', e)
@@ -219,5 +221,11 @@ class RModulesService {
 		}
 		def trigger = new SimpleTrigger("triggerNow"+Calendar.instance.time.time, 'RModules')
 		quartzScheduler.scheduleJob(jobDetail, trigger)
+	}
+	
+	// method for non-R jobs
+	def prepareDataForExport(userName, params) {
+		loadJobDataMap(userName, params);
+		return jobDataMap;
 	}
 }
