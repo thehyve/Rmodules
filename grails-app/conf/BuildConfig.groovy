@@ -26,8 +26,7 @@ def forkSettingsOther = [
         maxPerm:   384,
         debug:     false,
 ]
-/* We can't enable forked run-app now because of a bug in Grails:
- * http://stackoverflow.com/questions/19371859 */
+
 grails.project.fork = [
         test:    [ *:forkSettingsOther, daemon: true ],
         run:     forkSettingsRun,
@@ -51,7 +50,6 @@ grails.project.dependency.resolution = {
         grailsCentral()
         mavenCentral()
         mavenRepo 'https://repo.thehyve.nl/content/repositories/public/'
-        mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
     }
     dependencies {
         compile 'net.sf.opencsv:opencsv:2.3'

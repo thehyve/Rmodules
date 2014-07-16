@@ -5,45 +5,29 @@ import org.transmartproject.utils.FileUtils
 
 class aCGHgroupTestController {
 
-	def RModulesOutputRenderService;
+    def RModulesOutputRenderService
     def grailsApplication
 
     final def DEFAULT_FIELDS = ['chromosome', 'cytoband', 'start', 'end', 'pvalue', 'fdr'] as Set
     final Set DEFAULT_NUMBER_FIELDS = ['start', 'end', 'pvalue', 'fdr'] as Set
 
-	def aCGHgroupTestOutput =
-		{
-			def jobTypeName = "aCGHgroupTest"
+    def aCGHgroupTestOutput = {
+        def jobTypeName = "aCGHgroupTest"
 
-			def imageLinks = new ArrayList<String>()
+        def imageLinks = new ArrayList<String>()
 
-			RModulesOutputRenderService.initializeAttributes(params.jobName, jobTypeName, imageLinks)
+        RModulesOutputRenderService.initializeAttributes(params.jobName, jobTypeName, imageLinks)
 
-			render (template: "/plugin/aCGHgroupTest_out", model: [zipLink: RModulesOutputRenderService.zipLink, imageLinks: imageLinks])
-		}
+        render(template: "/plugin/aCGHgroupTest_out", model: [zipLink: RModulesOutputRenderService.zipLink, imageLinks: imageLinks])
+    }
 
-	/**
-	 * This function will return the image path
-	 */
-	def imagePath = {
-		def imagePath = "${RModulesOutputRenderService.imageURL}${params.jobName}/groups-test.png"
-		render imagePath
-	}
-
-	/**
-	 * This function returns survival acgh analysis result in zipped file
-	 */
-	def zipFile = {
-		def zipFile = new File("${config.tempFolderDirectory}", "${params.jobName}/zippedData.zip")
-		if(zipFile.exists()) {
-			response.setHeader("Content-disposition", "attachment;filename=${zipFile.getName()}")
-			response.contentType  = 'application/octet-stream'
-			response.outputStream << zipFile.getBytes()
-			response.outputStream.flush()
-		} else {
-			response.status = 404
-		}
-	}
+    /**
+     * This function will return the image path
+     */
+    def imagePath = {
+        def imagePath = "${RModulesOutputRenderService.relativeImageURL}${params.jobName}/groups-test.png"
+        render imagePath
+    }
 
     def resultTable = {
         response.contentType = 'text/json'
@@ -51,7 +35,7 @@ class aCGHgroupTestController {
             render new JSON([error: 'jobName parameter is required. It should contains just alphanumeric characters and dashes.'])
             return
         }
-        def file = new File("${config.tempFolderDirectory}", "${params.jobName}/workingDirectory/groups-test.txt")
+        def file = new File("${RModulesOutputRenderService.tempFolderDirectory}", "${params.jobName}/workingDirectory/groups-test.txt")
         if (file.exists()) {
             def fields = params.fields?.split('\\s*,\\s*') as Set ?: DEFAULT_FIELDS
 
