@@ -8,6 +8,8 @@ import jobs.steps.helpers.NumericColumnConfigurator
 import jobs.steps.helpers.SimpleAddColumnConfigurator
 import jobs.table.Table
 import jobs.table.columns.PrimaryKeyColumn
+import nl.vumc.biomedbridges.core.Constants
+import nl.vumc.biomedbridges.core.DefaultWorkflowEngineFactory
 import nl.vumc.biomedbridges.core.Workflow
 import nl.vumc.biomedbridges.core.WorkflowEngine
 import nl.vumc.biomedbridges.core.WorkflowEngineFactory
@@ -105,8 +107,9 @@ class Histogram extends AbstractAnalysisJob {
         assert 'Galaxy credentials are not specified', galaxyInstanceUrl && apiKey
 
         def historyName = params['jobName']
-        String configuration = GalaxyConfiguration.buildConfiguration(galaxyInstanceUrl, apiKey, historyName)
-        workflowEngine = WorkflowEngineFactory.getWorkflowEngine(WorkflowEngineFactory.GALAXY_TYPE, configuration)
+        def galaxyConfiguration = new GalaxyConfiguration()
+        galaxyConfiguration.buildConfiguration(galaxyInstanceUrl, apiKey, historyName)
+        workflowEngine = new DefaultWorkflowEngineFactory().getWorkflowEngine(WorkflowEngineFactory.GALAXY_TYPE, galaxyConfiguration)
         workflow = workflowEngine.getWorkflow(GALAXY_WORKFLOW_NAME)
 
         primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
