@@ -47,4 +47,7 @@ modules = {
     waterfall {
         resource url:"/js/plugin/Waterfall.js"
     }
+    rnaseq_dge {
+        resource url:"/js/plugin/DgeRNASeq.js"
+    }
 }
