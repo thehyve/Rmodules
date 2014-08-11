@@ -39,7 +39,7 @@ class RNASeqDge extends AbstractAnalysisJob {
     final static String DESIGN_MATRIX_INPUT_NAME = 'Design Matrix'
     final static String PHENODATA_FILE_NAME = 'phenodata.tsv'
     final static String CONTRAST_PARAM_NAME = 'contrast'
-    final static int ANALYSIS_STEP_POSITION = 3
+    final static int ANALYSIS_STEP_POSITION = 1
 
     @Autowired
     HighDimensionResource highDimensionResource
