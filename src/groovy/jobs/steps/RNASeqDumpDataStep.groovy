@@ -32,10 +32,8 @@ class RNASeqDumpDataStep extends AbstractDumpHighDimensionalDataStep {
 
         int j = 6
 
-        PER_ASSAY_COLUMNS.each {k, Closure<RnaSeqValues> value ->
-            assays.each { AssayColumn assay ->
-                line[j++] = value(row.getAt(assay)) as String
-            }
+        assays.each { AssayColumn assay ->
+            line[j++] = row.getAt(assay).getReadCount() as String
         }
 
         line
@@ -50,10 +48,8 @@ class RNASeqDumpDataStep extends AbstractDumpHighDimensionalDataStep {
                 'cytoband',
         ];
 
-        PER_ASSAY_COLUMNS.keySet().each {String head ->
-            assays.each { AssayColumn assay ->
-                r << "${head}.${assay.patientInTrialId}".toString()
-            }
+        assays.each { AssayColumn assay ->
+            r << assay.patientInTrialId
         }
 
         r
@@ -62,10 +58,5 @@ class RNASeqDumpDataStep extends AbstractDumpHighDimensionalDataStep {
     @Lazy def assays = {
         results.values().iterator().next().indicesList
     }()
-
-
-    private static final Map PER_ASSAY_COLUMNS = [
-            readcount:     { RnaSeqValues v -> v.getReadCount() },
-    ]
 
 }
