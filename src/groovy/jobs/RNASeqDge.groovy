@@ -6,6 +6,7 @@ import jobs.steps.helpers.HighDimensionColumnConfigurator
 import jobs.steps.helpers.SimpleAddColumnConfigurator
 import jobs.table.Table
 import jobs.table.columns.PrimaryKeyColumn
+import nl.vumc.biomedbridges.galaxy.HistoryUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
@@ -58,6 +59,7 @@ class RNASeqDge extends AbstractAnalysisJob {
     def thisJob = this
     WorkflowEngine workflowEngine
     Workflow workflow
+    HistoryUtils historyUtils
 
     @PostConstruct
     void init() {
@@ -68,7 +70,8 @@ class RNASeqDge extends AbstractAnalysisJob {
         def historyName = params['jobName']
         def galaxyConfiguration = new GalaxyConfiguration()
         galaxyConfiguration.buildConfiguration(galaxyInstanceUrl, apiKey, historyName)
-        workflowEngine = new DefaultWorkflowEngineFactory().getWorkflowEngine(WorkflowEngineFactory.GALAXY_TYPE, galaxyConfiguration)
+        historyUtils = new HistoryUtils()
+        workflowEngine = new DefaultWorkflowEngineFactory().getWorkflowEngine(WorkflowEngineFactory.GALAXY_TYPE, galaxyConfiguration, historyUtils)
         workflow = workflowEngine.getWorkflow(GALAXY_WORKFLOW_NAME)
 
         primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
