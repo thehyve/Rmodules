@@ -20,17 +20,21 @@ class RNASeqDumpDataStep extends AbstractDumpHighDimensionalDataStep {
                             DataRow genericRow,
                             AssayColumn column /* null */,
                             Object cell /* null */) {
+
         RegionRow<RnaSeqValues> row = genericRow
         // +1 because the first column has no header
         def line = Lists.newArrayListWithCapacity(csvHeader.size() + 1)
         line[0] = rowNumber++ as String
-        line[1] = row.chromosome as String
-        line[2] = row.start as String
-        line[3] = row.end as String
-        line[4] = row.numberOfProbes as String
-        line[5] = row.cytoband
+        line[1] = row.name as String
+        line[2] = row.chromosome as String
+        line[3] = row.start as String
+        line[4] = row.end as String
+        line[5] = row.numberOfProbes as String
+        line[6] = row.cytoband as String
+        line[7] = row.geneSymbol as String
+        line[8] = row.geneId as String
 
-        int j = 6
+        int j = 9
 
         PER_ASSAY_COLUMNS.each {k, Closure<RnaSeqValues> value ->
             assays.each { AssayColumn assay ->
@@ -43,11 +47,14 @@ class RNASeqDumpDataStep extends AbstractDumpHighDimensionalDataStep {
 
     @Lazy List<String> csvHeader = {
         List<String> r = [
+                'regionname',
                 'chromosome',
                 'start',
                 'end',
                 'num.probes',
                 'cytoband',
+                'genesymbol',
+                'geneid'
         ];
 
         PER_ASSAY_COLUMNS.keySet().each {String head ->
@@ -63,9 +70,10 @@ class RNASeqDumpDataStep extends AbstractDumpHighDimensionalDataStep {
         results.values().iterator().next().indicesList
     }()
 
-
     private static final Map PER_ASSAY_COLUMNS = [
-            readcount:     { RnaSeqValues v -> v.getReadCount() },
+            readcount:              { RnaSeqValues v -> v.getReadCount() },
+            //normalizedreadcount:    { RnaSeqValues v -> v.getNormalizedReadCount() },
+            //lognormalizedreadcount: { RnaSeqValues v -> v.getLogNormalizedReadCount() },
+            //zscore:                 { RnaSeqValues v -> v.getZscore() },
     ]
-
 }

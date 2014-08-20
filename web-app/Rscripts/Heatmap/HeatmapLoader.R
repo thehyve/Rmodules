@@ -31,17 +31,20 @@ aggregate.probes = FALSE
 )
 {
 
-	print("-------------------")
-	print("HeatmapLoader.R")
-	print("CREATING HEATMAP")
+    print("-------------------")
+    print("HeatmapLoader.R")
+    print("CREATING HEATMAP")
 
-	library(Cairo)
-	library(ggplot2)
-	library(reshape2)
-	library(gplots)
+    library(Cairo)
+    library(ggplot2)
+    library(reshape2)
+    library(gplots)
 	
-	#Pull the GEX data from the file.
-	mRNAData <- data.frame(read.delim(input.filename, stringsAsFactors = FALSE))
+    #Pull the GEX data from the file.
+    mRNAData <- data.frame(read.delim(input.filename, stringsAsFactors = FALSE))
+
+    #We can't draw a heatmap if no data values are given
+    if(nrow(mRNAData)<1) stop("||FRIENDLY||R cannot plot a heatmap when NO data is provided. Please check your variable selection and run again.")
 
     # The GROUP column needs to have the values from GENE_SYMBOL concatenated as a suffix,
     # but only if the latter does not contain a private value (which means that the biomarker was not present in any of the dictionaries)
