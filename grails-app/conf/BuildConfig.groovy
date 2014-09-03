@@ -74,6 +74,7 @@ grails.project.dependency.resolution = {
 
         compile('nl.vumc.biomedbridges:WorkflowRunner:0.1.0-SNAPSHOT') {
             excludes 'slf4j-log4j12'
+            excludes 'guice'
         }
     }
 
