@@ -26,7 +26,7 @@ import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
  * Note:
  * 1. Remember to register plugin module (searchapp.plugin_module):
  * name: 'RNA-Seq Differential Gene Expression (EdgeR)'
- * module_name 'rnaSeqDge'
+ * module_name 'dgeRNASeq'
  * form_page: 'DgeRNASeq'
  * 2. Set up galaxy.instance_url and galaxy.api_key in your config. file.
  */
