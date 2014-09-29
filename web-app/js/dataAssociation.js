@@ -64,17 +64,17 @@ function createAdvancedWorkflowMenu(result) {
                 iconCls : 'comparebutton',
                 disabled : false,
                 menu : advMenu
-                    },
-                    '->',
-                    {
-                        text : 'Save to PDF',
-                iconCls : 'savepdfbutton',
-                hidden : false,
-                id : 'savetopdfbtn',
-                handler: function(){
-                    generatePdfFromHTML('dataAssociationBody', 'DataAssociation.pdf');
-                }
                     }
+//                ,'->',
+//                    {
+//                        text : 'Save to PDF',
+//                iconCls : 'savepdfbutton',
+//                hidden : false,
+//                id : 'savetopdfbtn',
+//                handler: function(){
+//                    generatePdfFromHTML('dataAssociationBody', 'DataAssociation.pdf');
+//                }
+//                    }
                 );
     }
 }
@@ -123,7 +123,7 @@ function loadAnalysisPage(itemId, isCompletedJob, jobName) {
             if (isCompletedJob) {
                 switch (itemId) {
                     case 'aCGHSurvivalAnalysis' :
-                        survivalAnalysisACGHView.generateResultGrid(jobName, survivalAnalysisACGHView);
+                        survivalAnalysisACGHView.renderResults(jobName, survivalAnalysisACGHView);
                         break;
                     case 'groupTestaCGH' :
                         groupTestView.renderResults(jobName, groupTestView);
@@ -443,23 +443,24 @@ function setupSubsetIds(formParams){
 }
 
 function readConceptVariables(divIds){
-    var variableConceptCode = ""
-        var variableEle = Ext.get(divIds);
+    var variableConceptPath = ""
+    var variableEle = Ext.get(divIds);
 
     //If the variable element has children, we need to parse them and concatenate their values.
-    if(variableEle && variableEle.dom.childNodes[0])
-    {
-        //Loop through the variables and add them to a comma seperated list.
-        for(nodeIndex = 0; nodeIndex < variableEle.dom.childNodes.length; nodeIndex++)
-        {
-            //If we already have a value, add the seperator.
-            if(variableConceptCode != '') variableConceptCode += '|'
+    if (variableEle && variableEle.dom.childNodes[0]) {
+        //Loop through the variables and add them to a comma separated list.
+        for(nodeIndex = 0; nodeIndex < variableEle.dom.childNodes.length; nodeIndex++) {
+            //If we already have a value, add the separator.
+            if (variableConceptPath != '') {
+                variableConceptPath += '|'
+            }
 
-                //Add the concept path to the string.
-                variableConceptCode += getQuerySummaryItem(variableEle.dom.childNodes[nodeIndex]).trim()
+            //Add the concept path to the string.
+            variableConceptPath += RmodulesView.fetch_concept_path(
+                variableEle.dom.childNodes[nodeIndex])
         }
     }
-    return variableConceptCode;
+    return variableConceptPath;
 }
 
 function submitJob(formParams)

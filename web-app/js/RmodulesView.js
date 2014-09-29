@@ -1,6 +1,8 @@
+//# sourceURL=RmodulesView.js
 var RmodulesView = function () {
     this.droppable_divs = {
-        "categorical": ["divGroupByVariable", "divDependentVariable", "divIndependentVariable", "divCategoryVariable", "divCensoringVariable"],
+        "categorical": ["divGroupByVariable", "divDependentVariable", "divIndependentVariable",
+                        "divReferenceVariable","divStratificationVariable", "divCategoryVariable", "divCensoringVariable"],
         "numerical": ["divTimeVariable", "divVariables", "divDataNode"]
     };
     this.independent_hidden_divs = ["independentVarDataType", "independentPathway"]
@@ -79,6 +81,18 @@ RmodulesView.prototype.get_parameters_for_mrna = function (constraints) {
     return constraints;
 };
 
+RmodulesView.fetch_concept_path = function RmodulesView_fetch_concept_type_(el) {
+    var conceptId = el.getAttribute('conceptId').trim();
+    var conceptIdPattern = /^\\\\[^\\]+(\\.*)$/;
+    var match = conceptIdPattern.exec(conceptId);
+
+    if (match != null) {
+        return match[1];
+    } else {
+        return undefined;
+    }
+};
+
 RmodulesView.prototype.read_concept_variables = function () {
 
     var _el;
@@ -95,7 +109,7 @@ RmodulesView.prototype.read_concept_variables = function () {
 
         for (var i = 0; i < el.dom.childNodes.length; i++) {
 
-            var _term = getQuerySummaryItem(el.dom.childNodes[i]).trim();
+            var _term = RmodulesView.fetch_concept_path(el.dom.childNodes[i]);
 
             // map the term type
             switch (type) {
@@ -180,7 +194,7 @@ RmodulesView.prototype.get_analysis_constraints = function (jobType) {
     // do not create search_keyword_ids param if  pathway / gene is not selected
     // when gene / pathway is not selected, analysis will take up all pathways/genes.
     if (GLOBAL.CurrentPathway) {
-        _returnVal['dataConstraints']['search_keyword_ids'] = [GLOBAL.CurrentPathway];
+        _returnVal['dataConstraints']['search_keyword_ids'] = GLOBAL.CurrentPathway.split(",");
     }
 
     var cases = {

@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Scope
 import org.springframework.stereotype.Component
 import org.transmartproject.core.dataquery.highdim.HighDimensionResource
+
 import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 
 @Component
@@ -104,7 +105,7 @@ class AcghSurvivalAnalysis extends AbstractAnalysisJob implements InitializingBe
                 '''source('$pluginDirectory/aCGH/acgh-survival-test.R')''',
                 '''acgh.survival.test(survival               = 'TIME',
                                       status                 = 'CENSOR',
-                                      number.of.permutations = 10000,
+                                      number.of.permutations = $numberOfPermutations,
                                       test.aberrations       = '$aberrationType')''',
                 '''source('$pluginDirectory/aCGH/acgh-plot-survival.R')''',
                 '''acgh.plot.survival(survival             = 'TIME',

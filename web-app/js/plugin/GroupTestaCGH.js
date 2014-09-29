@@ -280,15 +280,24 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
          * Buttons for Input Panel
          * @type {Array}
          */
-        var gtInputBarBtnList = ['->', {  // '->' making it right aligned
-            xtype: 'button',
-            text: 'Run Analysis',
-            scale: 'medium',
-            iconCls: 'runbutton',
-            handler: function () {
-                groupTestView.submitGroupTestJob();
-            }
-        }];
+        var gtInputBarBtnList = ['->', // '->' making it right aligned
+            'Permutations:',
+            {
+                xtype: 'textfield',
+                name: 'permutation',
+                id: 'permutation',
+                width: 50,
+                value: 10000
+            },
+            {
+                xtype: 'button',
+                text: 'Run Analysis',
+                scale: 'medium',
+                iconCls: 'runbutton',
+                handler: function () {
+                    groupTestView.submitGroupTestJob();
+                }
+            }];
 
         return new Ext.Toolbar({
             height: 30,
@@ -330,6 +339,12 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
         if (!alterationVal) {
             isValid = false;
             invalidInputs.push(this.inputBar.alterationPanel.title);
+        }
+
+        var permutationEl = Ext.get('permutation');
+        if (permutationEl.getValue().trim() == '' || isNaN(permutationEl.getValue())) {
+            isValid = false;
+            invalidInputs.push('Permutations');
         }
 
         if (!isValid) {
@@ -441,7 +456,7 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
      * generates intermediate result in grid panel
      * @param data
      */
-    generateResultGrid: function (jobName, view) {
+    renderResults: function (jobName, view) {
 
         var _this = this;
 
@@ -511,6 +526,8 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
 
                 // finally load the data
                 store.load({params: {start: 0, limit: GEN_RESULT_GRID_LIMIT}});
+
+                _this.createResultPlotPanel(jobName, view)
             },
             failure: function (result, request) {
                 console.log('failure ....')
@@ -547,11 +564,6 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
         this.renderResults(jobName, view);
     },
 
-    renderResults: function (jobName, view) {
-        this.generateResultGrid(jobName, view);
-        this.createResultPlotPanel(jobName, view);
-    },
-
     submitGroupTestJob: function () {
         var _this = this;
 
@@ -570,6 +582,8 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
             var statTestVal = statTestComponent.getSelectedValue();
             var alternationComponent = this.inputBar.alterationPanel.getComponent('alteration-types-chk-group');
             var alternationVal = alternationComponent.getSelectedValue();
+            var permutationComponent = Ext.get('permutation');
+            var permutation = permutationComponent.getValue();
 
             this.alteration = this.translateAlteration(alternationVal);
 
@@ -583,6 +597,7 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
                 groupVariable: groupVals,
                 statisticsType: statTestVal,
                 aberrationType: alternationVal,
+                numberOfPermutations: permutation,
                 variablesConceptPaths: variablesConceptCode,
                 analysisConstraints: JSON.stringify({
                     "job_type": _this.jobType,

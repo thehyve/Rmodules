@@ -13,15 +13,24 @@ var survivalAnalysisACGHView;
  * Buttons for Input Panel
  * @type {Array}
  */
-var _inputpanel_items = ['->',{  // '->' making it right aligned
-    xtype: 'button',
-    text: 'Run Analysis',
-    scale: 'medium',
-    iconCls: 'runbutton',
-    handler: function () {
-        survivalAnalysisACGHView.submitACGHSurvivalAnalysisJob();
-    }
-}];
+var _inputpanel_items = ['->', // '->' making it right aligned
+    'Permutations:',
+    {
+        xtype: 'textfield',
+        name: 'permutation',
+        id: 'permutation',
+        width: 50,
+        value: 10000
+    },
+    {
+        xtype: 'button',
+        text: 'Run Analysis',
+        scale: 'medium',
+        iconCls: 'runbutton',
+        handler: function () {
+            survivalAnalysisACGHView.submitACGHSurvivalAnalysisJob();
+        }
+    }];
 
 /**
  * list of buttons for intermediate result grid
@@ -398,6 +407,8 @@ var SurvivalAnalysisACGHView = Ext.extend(GenericAnalysisView, {
             var regionVarConceptCode = this.inputBar.regionPanel.getConceptCode();
             var survivalVarConceptCode = this.inputBar.survivalPanel.getConceptCode();
             var censoringVarConceptCode = this.inputBar.censoringPanel.getConceptCodes();
+            var permutationComponent = Ext.get('permutation');
+            var permutation = permutationComponent.getValue();
 
             // get alteration value
             var alterationBtnGroup = this.inputBar.alterationPanel.getComponent('alteration-types-chk-group');
@@ -415,6 +426,7 @@ var SurvivalAnalysisACGHView = Ext.extend(GenericAnalysisView, {
                 censoringVariable : censoringVarConceptCode,
                 variablesConceptPaths: variablesConceptCode,
                 aberrationType:alterationVal,
+                numberOfPermutations: permutation,
                 confidenceIntervals:'',
                 jobType: SA_JOB_TYPE,
                 analysisConstraints: JSON.stringify({
@@ -442,7 +454,7 @@ var SurvivalAnalysisACGHView = Ext.extend(GenericAnalysisView, {
             this.resetResult();
 
             // submit job
-            var job = this.submitJob(formParams, this.generateResultGrid, this);
+            var job = this.submitJob(formParams, this.renderResults, this);
 
         }
     },
@@ -489,6 +501,12 @@ var SurvivalAnalysisACGHView = Ext.extend(GenericAnalysisView, {
             invalidInputs.push(this.inputBar.alterationPanel.title);
         }
 
+        var permutationEl = Ext.get('permutation');
+        if (permutationEl.getValue().trim() == '' || isNaN(permutationEl.getValue())) {
+            isValid = false;
+            invalidInputs.push('Permutations');
+        }
+
         if (!isValid) {
             var strErrMsg = 'Following needs to be defined: ';
             invalidInputs.each(function (item) {
@@ -513,7 +531,7 @@ var SurvivalAnalysisACGHView = Ext.extend(GenericAnalysisView, {
      * generates intermediate result in grid panel
      * @param data
      */
-    generateResultGrid: function (jobName, view) {
+    renderResults: function (jobName, view) {
 
         var _this = this;
 

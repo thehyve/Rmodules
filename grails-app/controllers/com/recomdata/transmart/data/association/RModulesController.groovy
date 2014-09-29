@@ -67,7 +67,7 @@ class RModulesController {
      * Current methodology is username-jobtype-ID from sequence generator
      */
     def createnewjob = {
-        def result = asyncJobService.createnewjob(params.jobName, params.jobType)
+        def result = asyncJobService.createnewjob(params)
 
         response.setContentType("text/json")
         response.outputStream << result.toString()
@@ -119,6 +119,9 @@ class RModulesController {
                 break
             case 'waterfall':
                 jsonResult = createJob(params, Waterfall, false)
+                break
+            case 'logisticRegression':
+                jsonResult = createJob(params, LogisticRegression, false)
                 break
             case 'acghFrequencyPlot':
                 jsonResult = createJob(params, AcghFrequencyPlot)
