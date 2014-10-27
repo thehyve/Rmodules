@@ -57,7 +57,7 @@ PCAView.prototype.get_form_params = function () {
 
         //get analysis constraints
         var constraints_json = this.get_analysis_constraints('PCA');
-        constraints_json['projections'] = ["zscore"];
+        constraints_json['projections'] = ["default_real_projection"];
 
         formParameters['analysisConstraints'] = JSON.stringify(constraints_json);
 
