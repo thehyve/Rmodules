@@ -3,6 +3,10 @@
 #This will load our input files into variables so we can run the correlation.
 ###########################################################################
 
+# hardcoded variable names set by or expected by tranSMART RModules. TODO: (Timdo) Should be handled differently...
+correlation.result.filename <- "Correlation.txt"
+plot.image.filename <- "Correlation.png"
+
 Correlation.loader <- function(
 	input.filename,
 	output.file="Correlation",
