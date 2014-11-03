@@ -8,9 +8,9 @@ Goals:
 
 The first goal will be to encase each R analysis in a functional testsuite. Each R-script is run by being provided one or more data files and some arguments, after which data and image files are expected in return. To ensure minimal stability of the R code under active development, each analysis needs a set of input data that can be fed to the analysis to check whether the returned results still correspond to pregenerated and validated answers. 
 
-After implementing these general behaviour tests, it is my intention to start modularising the code and testing the more specific functions.
+After implementing these general behaviour tests, it is my intention to clean up and start modularising the code and testing the more specific functions.
 
-After that, I would like to add more consistent checking and error handling.
+After that, I would like to add more consistent checking and error handling, dependency management and bundle all R code into a package.
 
 
 Adding tests:
@@ -37,3 +37,6 @@ All testing files expect your active working directory within your R session to 
 ../Rmodules/web-app/Rscripts/tests
 
 Most analyses do not return results in a form other than an image. To enable easy testing, I have chosen to have these methods return a list containing all the results relevant for testing.
+
+Required R packages (besides packages needed for analyses themselves): testthat, tools
+

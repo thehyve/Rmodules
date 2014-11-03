@@ -136,6 +136,7 @@ aggregate.probes = FALSE
 
 
 	print("-------------------")
+    list(mRNAData)
 }
 
 plotHeatmap <- function(data, colcolors, color.range.clamps, output.file = "Heatmap", extension = "png") {
