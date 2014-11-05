@@ -1,3 +1,5 @@
+#  TODO: (Timdo) LineGraph.loader does not receive and therefore ignores subset information (s1/s2 could be implemented as a higher tier group split)
+
 
 LineGraph.loader <- function(
 	input.filename,
@@ -71,6 +73,7 @@ LineGraph.loader <- function(
       }
     }
   }
+  list(line.data)
 }
 
 

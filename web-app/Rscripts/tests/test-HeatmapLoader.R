@@ -6,7 +6,7 @@ test_that("function Heatmap.loader", {
     source("../Heatmap/HeatmapLoader.R")
     fileListBefore <- list.files()
     
-    test.input.filenames <- c("datasets/HeatmapLoader-test1.input")
+    test.input.filenames <- c("datasets/HeatmapLoader_test1.input")
     
     for (test.input.filename in test.input.filenames) {
         input.filename.stem <- file_path_sans_ext(test.input.filename)
