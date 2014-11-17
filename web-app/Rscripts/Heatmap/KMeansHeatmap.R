@@ -88,7 +88,7 @@ aggregate.probes = FALSE
     matrixData <- data.matrix(subset(castedData, select = -c(GROUP)))
 
     # by Serge and Wei to filter a sub set and reorder markers
-    matrixData <- matrixData[!apply(is.na(matrixData),1,any), ]				# remove rows with NA
+    matrixData <- matrixData[, !apply(is.na(matrixData),2,any)]				# remove rows with NA
     if (nrow(matrixData) == 0) {
         Plot.error.message("The selected cohort has incomplete data for each of your biomarkers.\nNo data is left to plot a heatmap with."); return()
     }

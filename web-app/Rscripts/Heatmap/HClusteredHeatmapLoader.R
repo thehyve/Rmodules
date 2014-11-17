@@ -93,7 +93,7 @@ cluster.by.columns = TRUE
 
     # by Serge and Wei to filter a sub set and reorder markers
 
-    mRNAData <- mRNAData[!apply(is.na(mRNAData),1,any), ]					# remove rows with NA
+    mRNAData <- mRNAData[, !apply(is.na(mRNAData),2,any)]					# remove rows with NA
     if (nrow(mRNAData) == 0) {
         Plot.error.message("The selected cohort has incomplete data for each of your biomarkers.\nNo data is left to plot a heatmap with."); return()
     }
