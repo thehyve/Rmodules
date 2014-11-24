@@ -97,7 +97,7 @@ function createAdvancedWorkflowMenuItems(modules) {
  * @param isCompletedJob
  * @param jobName
  */
-function loadAnalysisPage(itemId, isCompletedJob, jobName) {
+function loadAnalysisPage(itemId, isCompletedJob, jobName, viewerURL) {
 
     // get analysis module attribute
     var module = findModuleById(itemId);
@@ -106,6 +106,7 @@ function loadAnalysisPage(itemId, isCompletedJob, jobName) {
     // TODO: Please change with the consistent naming for all related files and variable
     if (itemId ==  'aCGHgroupTest' ) itemId = 'groupTestaCGH';
     if (itemId ==  'RNASeqgroupTest' ) itemId = 'groupTestRNASeq';
+    if (itemId ==  'RHeatmap') itemId = 'heatmap';
 
     // ajax call to
     $j.ajax({
@@ -117,7 +118,7 @@ function loadAnalysisPage(itemId, isCompletedJob, jobName) {
             $j('#variableSelection').html(response);
 
             // load the plugin view
-            loadPluginView(itemId);
+            loadPluginView();
 
             // if it's loading completed job then display the result as well
             if (isCompletedJob) {
@@ -134,6 +135,9 @@ function loadAnalysisPage(itemId, isCompletedJob, jobName) {
                     case 'acghFrequencyPlot' :
                         frequencyPlotView.renderResults(jobName, frequencyPlotView);
                         break;
+                    default :
+                        var fullViewerURL = pageInfo.basePath + viewerURL;
+                        Ext.get('analysisOutput').load({url : fullViewerURL, callback: loadModuleOutput});
                 }
             }
         }
