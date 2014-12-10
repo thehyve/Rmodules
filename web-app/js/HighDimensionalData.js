@@ -160,13 +160,18 @@ HighDimensionalData.prototype.create_pathway_search_box = function (searchInputE
         },
 
         onSelect: function (record) {
-            // Append the selected keyword to the list
-            if (GLOBAL.CurrentPathway) {
-                GLOBAL.CurrentPathway += ",";
-                GLOBAL.CurrentPathwayName += ", ";
+            // Check for duplicates
+            var ids = GLOBAL.CurrentPathway.split(",");
+            if (ids.indexOf(record.data.id.toString()) == -1) {
+
+                // Append the selected keyword to the list
+                if (GLOBAL.CurrentPathway) {
+                    GLOBAL.CurrentPathway += ",";
+                    GLOBAL.CurrentPathwayName += ", ";
+                }
+                GLOBAL.CurrentPathway += record.data.id.toString();
+                GLOBAL.CurrentPathwayName += record.data.keyword;
             }
-            GLOBAL.CurrentPathway += record.data.id;
-            GLOBAL.CurrentPathwayName += record.data.keyword;
 
             // Set the value in the text field
             var sp = Ext.get(searchInputEltName);
@@ -380,14 +385,16 @@ HighDimensionalData.prototype.gather_high_dimensional_data = function (divId, hi
       this.fetchNodeDetails( divId, function( result ) {
         _this.data = JSON.parse(result.responseText);
 
-        platforms = _this.getPlatformValidator(_this.getPlatforms(_this.data));
-        var formValidator = new FormValidator(platforms);
-
-        if (formValidator.validateInputForm()) {
-          _this.display_high_dimensional_popup();
-        } else {
-          formValidator.display_errors();
-        }
+        _this.display_high_dimensional_popup();
+//        TODO: re-enable platform validation, except for geneprint:
+//        platforms = _this.getPlatformValidator(_this.getPlatforms(_this.data));
+//        var formValidator = new FormValidator(platforms);
+//
+//        if (formValidator.validateInputForm()) {
+//          _this.display_high_dimensional_popup();
+//        } else {
+//          formValidator.display_errors();
+//        }
 
       });
     } else { // something is not correct in the validation

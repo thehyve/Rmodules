@@ -1,10 +1,10 @@
 package com.recomdata.transmart.data.association
 
-
-import org.rosuda.REngine.REXP;
-import org.rosuda.REngine.Rserve.*;
-import org.rosuda.Rserve.*;
-import grails.util.Holders;
+import grails.util.Holders
+import org.rosuda.REngine.REXP
+import org.rosuda.REngine.Rserve.RConnection
+import org.rosuda.REngine.Rserve.RserveException
+import org.rosuda.Rserve.*
 
 /**
  * This class contains methods for interacting with the R environment.
@@ -16,12 +16,10 @@ class RModulesJobProcessingService {
 	
 	def grailsApplication
 	
-	def runRScript(workingDirectory, scriptName, commandToRun)
+	def runRScript(workingDirectory, scriptName, commandToRun, rScriptDirectory)
 	{
 		//Establish a connection to R Server.
-		RConnection c = new RConnection();
-		
-		String rScriptDirectory = Holders.config.com.recomdata.transmart.data.export.rScriptDirectory
+		RConnection c = new RConnection(Holders.config.RModules.host, Holders.config.RModules.port);
 		
 		//Set the working directory to be our temporary location.
 		log.debug("Attempting following R Command : " + "setwd('${workingDirectory}')".replace("\\","\\\\"))
