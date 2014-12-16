@@ -13,6 +13,8 @@ abstract class AbstractDumpHighDimensionalDataStep extends AbstractDumpStep {
     /* true if computeCsvRow is to be called once per (row, column),
        false to called only once per row */
     boolean callPerColumn = true
+    char lineSeparator = '\t' as char
+    char quote = '\"' as char
 
     File temporaryDirectory
     Closure<Map<List<String>, TabularResult>> resultsHolder
@@ -50,7 +52,7 @@ abstract class AbstractDumpHighDimensionalDataStep extends AbstractDumpStep {
         File output = new File(temporaryDirectory, outputFileName)
         output.createNewFile()
         output.withWriter { writer ->
-            CSVWriter csvWriter = new CSVWriter(writer, '\t' as char)
+            CSVWriter csvWriter = new CSVWriter(writer, lineSeparator, quote)
             constructFile.call(csvWriter)
         }
     }

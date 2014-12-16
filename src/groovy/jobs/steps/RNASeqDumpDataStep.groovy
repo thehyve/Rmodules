@@ -35,9 +35,6 @@ class RNASeqDumpDataStep extends AbstractDumpHighDimensionalDataStep {
 
         int j = 8
 
-        assays.each { AssayColumn assay ->
-            line[j++] = row.getAt(assay).getReadCount() as String
-        }
         PER_ASSAY_COLUMNS.each {k, Closure<RnaSeqValues> value ->
             assays.each { AssayColumn assay ->
                 line[j++] = value(row.getAt(assay)) as String
@@ -58,9 +55,6 @@ class RNASeqDumpDataStep extends AbstractDumpHighDimensionalDataStep {
                 'genesymbol'
         ];
 
-        assays.each { AssayColumn assay ->
-            r << assay.patientInTrialId
-        }
         PER_ASSAY_COLUMNS.keySet().each {String head ->
             assays.each { AssayColumn assay ->
                 r << "${head}.${assay.patientInTrialId}".toString()

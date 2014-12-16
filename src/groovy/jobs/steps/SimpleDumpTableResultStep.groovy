@@ -12,6 +12,9 @@ class SimpleDumpTableResultStep extends AbstractDumpStep {
 
     final String statusName = 'Dumping Table Result'
 
+    char lineSeparator = '\t' as char
+    char quote = '\"' as char
+
     @Override
     void execute() {
         try {
@@ -53,7 +56,7 @@ class SimpleDumpTableResultStep extends AbstractDumpStep {
     private void withDefaultCsvWriter(Closure constructFile) {
         File output = new File(temporaryDirectory, outputFileName)
         output.withWriter { writer ->
-            CSVWriter csvWriter = new CSVWriter(writer, '\t' as char)
+            CSVWriter csvWriter = new CSVWriter(writer, lineSeparator, quote)
             constructFile.call(csvWriter)
         }
     }

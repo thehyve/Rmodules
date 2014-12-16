@@ -14,7 +14,7 @@ import org.transmartproject.core.dataquery.highdim.HighDimensionResource
 import nl.vumc.biomedbridges.core.DefaultWorkflowEngineFactory
 import nl.vumc.biomedbridges.core.Workflow
 import nl.vumc.biomedbridges.core.WorkflowEngine
-import nl.vumc.biomedbridges.core.WorkflowEngineFactory
+import nl.vumc.biomedbridges.core.WorkflowType
 import nl.vumc.biomedbridges.galaxy.configuration.GalaxyConfiguration
 import org.codehaus.groovy.grails.commons.GrailsApplication
 
@@ -70,8 +70,9 @@ class RNASeqDge extends AbstractAnalysisJob {
         def historyName = params['jobName']
         def galaxyConfiguration = new GalaxyConfiguration()
         galaxyConfiguration.buildConfiguration(galaxyInstanceUrl, apiKey, historyName)
+        galaxyConfiguration.debug = true
         historyUtils = new HistoryUtils()
-        workflowEngine = new DefaultWorkflowEngineFactory().getWorkflowEngine(WorkflowEngineFactory.GALAXY_TYPE, galaxyConfiguration, historyUtils)
+        workflowEngine = new DefaultWorkflowEngineFactory().getWorkflowEngine(WorkflowType.GALAXY, galaxyConfiguration, historyUtils)
         workflow = workflowEngine.getWorkflow(GALAXY_WORKFLOW_NAME)
 
         primaryKeyColumnConfigurator.column = new PrimaryKeyColumn(header: 'PATIENT_NUM')
@@ -98,7 +99,9 @@ class RNASeqDge extends AbstractAnalysisJob {
 
         steps << new SimpleDumpTableResultStep(table: table,
                 temporaryDirectory: temporaryDirectory,
-                outputFileName: PHENODATA_FILE_NAME
+                outputFileName: PHENODATA_FILE_NAME,
+                //no quotes
+                quote: '\u0000'
         )
 
         def openResultSetStep = new OpenHighDimensionalDataStep(
@@ -132,10 +135,12 @@ class RNASeqDge extends AbstractAnalysisJob {
     }
 
     protected Step createDumpHighDimensionDataStep(Closure resultsHolder) {
-        new RNASeqDumpDataStep(
+        new RNASeqReadCountDumpDataStep(
                 temporaryDirectory: temporaryDirectory,
                 resultsHolder: resultsHolder,
-                params: params)
+                params: params,
+                //no quotes
+                quote: '\u0000')
     }
 
     //TODO Is not needed for Galaxy analyses
