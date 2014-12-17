@@ -16,7 +16,6 @@ test_that("function LineGraph.loader", {
 
         answer.filename <- paste(file_path_sans_ext(test.input.filename), ".answer", sep = "")
         load(answer.filename)
-
         expect_identical(result, answer)
 
         file.remove(setdiff(list.files(), fileListBefore))

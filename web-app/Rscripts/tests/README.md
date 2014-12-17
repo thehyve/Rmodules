@@ -10,9 +10,9 @@ Tim Dorscheidt, tim@thehyve.nl
 
 The first goal will be to encase each R analysis in a functional testsuite. Each R-script is run by being provided one or more data files and some arguments, after which data and image files are expected in return. To ensure minimal stability of the R code under active development, each analysis needs a set of input data that can be fed to the analysis to check whether the returned results still correspond to pregenerated and validated answers. 
 
-After implementing these general behaviour tests, it is my intention to clean up and start modularising the code and testing the more specific functions.
+After implementing these general behaviour tests, it is my intention to clean up and start modularising the code and testing the more finegrained functionality.
 
-After that, I would like to add more consistent checking and error handling, dependency management and bundle all R code into a package.
+After that, I would like to add more consistent checking and error handling, dependency management and investigate the pros and cons of bundling all R code into a package.
 
 
 ### Adding tests:
@@ -29,8 +29,8 @@ This test file will also contain code to generate new datasets if needed.
 
 ### Running tests:
 
-Execute the following command in R `test_dir(".")`.
-All files starting with "test" will be run by testthat. Each context will show succesfully executed tests as dots. In addition, many analyses still contain print statements which will muddle the test report. This should be fixed in the future by handling all analysis messages in a different way.
+Execute the following command in R: `test_dir(".")`.
+All files starting with "test" will be run by testthat. Each context will show succesfully executed tests as dots. In addition, many analyses still contain print statements which will muddle the test report. This should be fixed in the future by handling all analysis messages in a different way. For more 
 
 ### Notes:
 
