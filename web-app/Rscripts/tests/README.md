@@ -29,14 +29,18 @@ This test file will also contain code to generate new datasets if needed.
 
 ### Running tests:
 
-Execute the following command in R: `test_dir(".")`.
-All files starting with "test" will be run by testthat. Each context will show succesfully executed tests as dots. In addition, many analyses still contain print statements which will muddle the test report. This should be fixed in the future by handling all analysis messages in a different way. For more 
+Load the testthat library: `library("testthat")`. If not installed yet: `install.packages("testthat")`
+
+Change your active working directory to: `../Rmodules/web-app/Rscripts/tests`
+
+To execute all tests: `test_dir(".")`.
+
+To execute a single test: `test_file("test-`...`.R")`.
+
+Once run, each test will print its context name and show succesfully executed parts as dots. Many analyses still contain print statements which will muddle the test report. This should be fixed in the future by handling all analysis messages in a different way.
 
 ### Notes:
-
-All testing files expect your active working directory within your R session to be set to `../Rmodules/web-app/Rscripts/tests`
 
 Most analyses do not return results in a form other than an image. To enable easy testing, I have chosen to have these methods return a list containing all the results relevant for testing.
 
 Required R packages (besides packages needed for analyses themselves): testthat, tools
-
