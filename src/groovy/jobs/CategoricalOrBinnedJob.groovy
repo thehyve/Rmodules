@@ -12,7 +12,7 @@ import org.transmartproject.core.dataquery.highdim.projections.Projection
 
 import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 
-abstract class CategoricalOrBinnedJob extends AbstractLocalRAnalysisJob implements InitializingBean {
+abstract class CategoricalOrBinnedJob extends AbstractAnalysisJob implements InitializingBean {
 
     @Autowired
     SimpleAddColumnConfigurator primaryKeyColumnConfigurator
@@ -26,10 +26,6 @@ abstract class CategoricalOrBinnedJob extends AbstractLocalRAnalysisJob implemen
 
     protected List<Step> prepareSteps() {
         List<Step> steps = []
-
-        steps << new ParametersFileStep(
-                temporaryDirectory: temporaryDirectory,
-                params: params)
 
         steps << new BuildTableResultStep(
                 table:         table,

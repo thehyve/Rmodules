@@ -5,11 +5,13 @@ import groovy.transform.EqualsAndHashCode
 import org.gmock.GMockController
 import org.junit.Before
 import org.springframework.beans.factory.annotation.Autowired
+import org.transmartproject.core.concept.ConceptKey
 import org.transmartproject.core.dataquery.clinical.ClinicalDataResource
 import org.transmartproject.core.dataquery.clinical.ClinicalVariable
 
 import static org.hamcrest.MatcherAssert.assertThat
-import static org.hamcrest.Matchers.*
+import static org.hamcrest.Matchers.contains
+import static org.hamcrest.Matchers.sameInstance
 
 @TestMixin(JobsIntegrationTestMixin)
 class ClinicalDataRetrieverTests {
@@ -34,6 +36,11 @@ class ClinicalDataRetrieverTests {
     @EqualsAndHashCode(includes = 'conceptPath')
     static class MockClinicalVariable implements ClinicalVariable {
         String conceptPath
+
+        @Override
+        ConceptKey getKey() {
+            return null
+        }
     }
 
     void testRepeatedClinicalVariable() {

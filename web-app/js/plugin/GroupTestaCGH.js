@@ -280,15 +280,24 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
          * Buttons for Input Panel
          * @type {Array}
          */
-        var gtInputBarBtnList = ['->', {  // '->' making it right aligned
-            xtype: 'button',
-            text: 'Run Analysis',
-            scale: 'medium',
-            iconCls: 'runbutton',
-            handler: function () {
-                groupTestView.submitGroupTestJob();
-            }
-        }];
+        var gtInputBarBtnList = ['->', // '->' making it right aligned
+            'Permutations:',
+            {
+                xtype: 'textfield',
+                name: 'permutation',
+                id: 'permutation',
+                width: 50,
+                value: 10000
+            },
+            {
+                xtype: 'button',
+                text: 'Run Analysis',
+                scale: 'medium',
+                iconCls: 'runbutton',
+                handler: function () {
+                    groupTestView.submitGroupTestJob();
+                }
+            }];
 
         return new Ext.Toolbar({
             height: 30,
@@ -332,6 +341,12 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
             invalidInputs.push(this.inputBar.alterationPanel.title);
         }
 
+        var permutationEl = Ext.get('permutation');
+        if (permutationEl.getValue().trim() == '' || isNaN(permutationEl.getValue())) {
+            isValid = false;
+            invalidInputs.push('Permutations');
+        }
+
         if (!isValid) {
             var strErrMsg = 'Following needs to be defined: ';
             invalidInputs.each(function (item) {
@@ -355,7 +370,7 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
         if (this.inputBar.groupPanel.getNumberOfConceptCodes() < 2) {
             Ext.MessageBox.show({
                 title: 'Incorrect number of groups',
-                msg: '[Group] input field should contain than one variables. Please add more variable.',
+                msg: '[Group] input field should contain more than one value. Please add more values.',
                 buttons: Ext.MessageBox.OK,
                 icon: Ext.MessageBox.ERROR
             });
@@ -420,15 +435,23 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
                 // generate template
                 groupTestPlotTpl.overwrite(Ext.get('gtPlotWrapper'), region);
 
-                // generate download button
-                var exportBtn = new Ext.Button({
-                    text: 'Download Result',
-                    iconCls: 'downloadbutton',
-                    renderTo: 'downloadBtn',
-                    handler: function () {
-                        _this.downloadGroupTestResult(jobName);
-                    }
-                });
+                jQuery.get(pageInfo.basePath + '/dataExport/isCurrentUserAllowedToExport',
+                    {
+                        result_instance_id1: groupTestView.jobInfo.jobInputsJson.result_instance_id1,
+                        result_instance_id2: groupTestView.jobInfo.jobInputsJson.result_instance_id2
+                    },
+                    function(data) {
+                        if (data.result) {
+                            new Ext.Button({
+                                text: 'Download Result',
+                                iconCls: 'downloadbutton',
+                                renderTo: 'downloadBtn',
+                                handler: function () {
+                                    _this.downloadGroupTestResult(jobName);
+                                }
+                            });
+                        }
+                    });
             },
             params: {
                 jobName: jobName,
@@ -441,7 +464,7 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
      * generates intermediate result in grid panel
      * @param data
      */
-    generateResultGrid: function (jobName, view) {
+    renderResults: function (jobName, view) {
 
         var _this = this;
 
@@ -475,7 +498,7 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
                     // load using script tags for cross domain, if the data in on the same domain as
                     // this page, an HttpProxy would be better
                     proxy: new Ext.data.HttpProxy({
-                        url: "../aCGHgroupTest/resultTable"
+                        url: pageInfo.basePath + "/aCGHgroupTest/resultTable"
                     })
 
                 });
@@ -511,6 +534,8 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
 
                 // finally load the data
                 store.load({params: {start: 0, limit: GEN_RESULT_GRID_LIMIT}});
+
+                _this.createResultPlotPanel(jobName, view)
             },
             failure: function (result, request) {
                 console.log('failure ....')
@@ -547,11 +572,6 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
         this.renderResults(jobName, view);
     },
 
-    renderResults: function (jobName, view) {
-        this.generateResultGrid(jobName, view);
-        this.createResultPlotPanel(jobName, view);
-    },
-
     submitGroupTestJob: function () {
         var _this = this;
 
@@ -563,50 +583,57 @@ var GroupTestView = Ext.extend(GenericAnalysisView, {
         }
 
         if (this.validateInputs()) {
+            var regionEl =  this.inputBar.regionPanel.getInputEl();
+            var errorMessage = "One or more of the high dimensional data nodes are not acgh data; select a copy number regions file for this analysis";
+            this.validateDataTypes(regionEl, ["acgh"], errorMessage, function() {
 
-            var regionVal = this.inputBar.regionPanel.getConceptCode();
-            var groupVals = this.inputBar.groupPanel.getConceptCodes();
-            var statTestComponent = this.inputBar.statTestPanel.getComponent('stat-test-chk-group');
-            var statTestVal = statTestComponent.getSelectedValue();
-            var alternationComponent = this.inputBar.alterationPanel.getComponent('alteration-types-chk-group');
-            var alternationVal = alternationComponent.getSelectedValue();
+                var regionVal = _this.inputBar.regionPanel.getConceptCode();
+                var groupVals = _this.inputBar.groupPanel.getConceptCodes();
+                var statTestComponent = _this.inputBar.statTestPanel.getComponent('stat-test-chk-group');
+                var statTestVal = statTestComponent.getSelectedValue();
+                var alternationComponent = _this.inputBar.alterationPanel.getComponent('alteration-types-chk-group');
+                var alternationVal = alternationComponent.getSelectedValue();
+                var permutationComponent = Ext.get('permutation');
+                var permutation = permutationComponent.getValue();
 
-            this.alteration = this.translateAlteration(alternationVal);
+                _this.alteration = _this.translateAlteration(alternationVal);
 
-            // create a string of all the concepts we need for the i2b2 data.
-            var variablesConceptCode = regionVal;
-            variablesConceptCode += groupVals != '' ? "|" + groupVals : "";
+                // create a string of all the concepts we need for the i2b2 data.
+                var variablesConceptCode = regionVal;
+                variablesConceptCode += groupVals != '' ? "|" + groupVals : "";
 
-            // compose params
-            var formParams = {
-                regionVariable: regionVal,
-                groupVariable: groupVals,
-                statisticsType: statTestVal,
-                aberrationType: alternationVal,
-                variablesConceptPaths: variablesConceptCode,
-                analysisConstraints: JSON.stringify({
-                    "job_type": _this.jobType,
-                    "data_type": "acgh",
-                    "assayConstraints": {
-                        "patient_set": [GLOBAL.CurrentSubsetIDs[1], GLOBAL.CurrentSubsetIDs[2]],
-                        "assay_id_list": null,
-                        "ontology_term": [
-                            {
-                                'term': regionVal,
-                                'options': {'type': "default"}
-                            }
-                        ],
-                        "trial_name": null
-                    },
-                    "dataConstraints": {
-                        "disjunction": null
-                    },
-                    "projections": ["acgh_values"]
-                }),
-                jobType: _this.jobType
-            };
+                // compose params
+                var formParams = {
+                    regionVariable: regionVal,
+                    groupVariable: groupVals,
+                    statisticsType: statTestVal,
+                    aberrationType: alternationVal,
+                    numberOfPermutations: permutation,
+                    variablesConceptPaths: variablesConceptCode,
+                    analysisConstraints: JSON.stringify({
+                        "job_type": _this.jobType,
+                        "data_type": "acgh",
+                        "assayConstraints": {
+                            "patient_set": [GLOBAL.CurrentSubsetIDs[1], GLOBAL.CurrentSubsetIDs[2]],
+                            "assay_id_list": null,
+                            "ontology_term": [
+                                {
+                                    'term': regionVal,
+                                    'options': {'type': "default"}
+                                }
+                            ],
+                            "trial_name": null
+                        },
+                        "dataConstraints": {
+                            "disjunction": null
+                        },
+                        "projections": ["acgh_values"]
+                    }),
+                    jobType: _this.jobType
+                };
 
-            var job = this.submitJob(formParams, this.onJobFinish, this);
+                var job = _this.submitJob(formParams, _this.onJobFinish, _this);
+            });
         }
 
     }

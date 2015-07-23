@@ -26,13 +26,19 @@ acgh.frequency.plot <- function
   {
       group.samples <- which(phenodata[,column] == group & !is.na(phenodata[,column]))
       group.ids     <- phenodata[group.samples, "PATIENT_NUM"]
-      highdimColumnsMatchingGroupIds <- pmatch(paste("flag.",group.ids,sep=""), colnames(calls))
+      highdimColumnsMatchingGroupIds <- match(paste("flag.",group.ids,sep=""), colnames(calls))
       highdimColumnsMatchingGroupIds <- highdimColumnsMatchingGroupIds[which(!is.na(highdimColumnsMatchingGroupIds))]
       group.calls   <- calls[ , highdimColumnsMatchingGroupIds, drop=FALSE]
 
       data.info[, paste('gain.freq.', group, sep='')] <- rowSums(group.calls > 0) / ncol(group.calls)
       data.info[, paste('loss.freq.', group, sep='')] <- rowSums(group.calls < 0) / ncol(group.calls)
   }
+
+  # Replace chromosome X with number 23 to get only integer column values
+  data.info$chromosome[data.info$chromosome=='X'] <- 23
+  data.info$chromosome <- as.integer(data.info$chromosome)
+  # Order by chromosome and start bp to ensure correct chromosome labels in frequency plots
+  data.info <- data.info[with(data.info,order(chromosome,start)),]
 
   # Helper function to create frequency-plot for 1 group
   FreqPlot <- function(data, group, main = 'Frequency Plot',...) 
@@ -45,6 +51,12 @@ acgh.frequency.plot <- function
     a.freq <- data[,paste('gain', '.freq.', group, sep='')]
     b.freq <- data[,paste('loss', '.freq.', group, sep='')]
 
+    if ('num.probes' %in% colnames(data) & !any(is.na(data$num.probes))) {
+      chromosomes <- rep(chromosomes, data$num.probes)
+      a.freq <- rep(a.freq, data$num.probes)
+      b.freq <- rep(b.freq, data$num.probes)
+    }
+
     plot(a.freq, ylim=c(-1,1), type='h', col=cols['gain'], xlab='chromosomes', ylab='frequency', xaxt='n', yaxt='n', main=main, ...)
     points(-b.freq, type='h', col=cols['loss'])
     abline(h=0)
@@ -56,6 +68,11 @@ acgh.frequency.plot <- function
     ax <- (cs.chr + c(0,cs.chr[-length(cs.chr)])) / 2
     lbl.chr <- unique(chromosomes)
     lbl.chr[lbl.chr==23] <- 'X'
+
+    # Check if chromosomes (labels) are loaded properly
+    if (length(ax) != length(lbl.chr)) {
+        stop("||FRIENDLY||There is an error in the chromosome/region data. It may not be loaded properly."); return()
+    }
 
     axis(side=1, at=ax, labels=lbl.chr, las=2)
     axis(side=2, at=c(-1, -0.5, 0, 0.5, 1), labels=c('100 %', ' 50 %', '0 %', '50 %', '100 %'), las=1)

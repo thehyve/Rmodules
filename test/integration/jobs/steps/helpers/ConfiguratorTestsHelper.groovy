@@ -19,7 +19,7 @@ import org.transmartproject.core.dataquery.highdim.projections.Projection
 import org.transmartproject.core.querytool.QueriesResource
 import org.transmartproject.core.querytool.QueryResult
 
-import static jobs.steps.OpenHighDimensionalDataStep.createConceptKeyFrom
+import static jobs.misc.Hacks.createConceptKeyFrom
 import static org.hamcrest.Matchers.*
 
 class ConfiguratorTestsHelper {
@@ -276,6 +276,5 @@ class ConfiguratorTestsHelper {
                 mockQueryResults(),
                 containsInAnyOrder(columns.collect { is it })).returns(clinicalResult)
     }
-
 
 }

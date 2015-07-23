@@ -47,9 +47,12 @@ grails.project.dependency.resolution = {
     log "warn"
 
     repositories {
+        // grailsPlugins()
+        // grailsHome()
         grailsCentral()
+        mavenLocal()
         mavenCentral()
-        mavenRepo 'https://repo.thehyve.nl/content/repositories/public/'
+        mavenRepo 'https://repo.transmartfoundation.org/content/repositories/public/'
     }
     dependencies {
         compile 'net.sf.opencsv:opencsv:2.3'
@@ -58,7 +61,7 @@ grails.project.dependency.resolution = {
 
         /* serializable ImmutableMap only on guava 16 */
         compile group: 'com.google.guava', name: 'guava', version: '16.0-dev-20140115-68c8348'
-        compile 'org.transmartproject:transmart-core-api:1.0-SNAPSHOT'
+        compile 'org.transmartproject:transmart-core-api:1.2.2-SNAPSHOT'
         compile('nl.vumc.biomedbridges:WorkflowRunner:0.1.0-SNAPSHOT') {
             excludes 'slf4j-log4j12'
         }
@@ -69,7 +72,6 @@ grails.project.dependency.resolution = {
             transitive = false /* don't bring groovy-all */
             export     = false
         }
-
         test('org.hamcrest:hamcrest-library:1.3',
                 'org.hamcrest:hamcrest-core:1.3') {
             export     = false
@@ -84,5 +86,15 @@ grails.project.dependency.resolution = {
         compile ':quartz:1.0-RC2'
 
         runtime ':resources:1.2.1'
+
+        // support for static code analysis
+        compile ":codenarc:0.21"
+    }
+}
+
+codenarc.reports = {
+    TransmartAppReport('html') {
+        outputFile = 'CodeNarc-Rmodules-Report.html'
+        title = 'Rmodules Report'
     }
 }

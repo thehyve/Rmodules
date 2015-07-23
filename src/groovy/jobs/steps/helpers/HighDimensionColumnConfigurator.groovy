@@ -17,7 +17,7 @@ import org.transmartproject.core.dataquery.highdim.dataconstraints.DataConstrain
 import org.transmartproject.core.dataquery.highdim.projections.Projection
 import org.transmartproject.core.exceptions.InvalidArgumentsException
 
-import static jobs.steps.OpenHighDimensionalDataStep.createConceptKeyFrom
+import static jobs.misc.Hacks.createConceptKeyFrom
 
 /**
  * A configurator supporting one or more high dimensional nodes. Multiple
@@ -39,9 +39,6 @@ class HighDimensionColumnConfigurator extends ColumnConfigurator {
 
     // multiConcepts => multiRow
     boolean multiConcepts = false
-
-    // not implemented
-    //boolean pruneConceptPath = false
 
     boolean isMultiConcepts() {
         multiConcepts
@@ -81,14 +78,15 @@ class HighDimensionColumnConfigurator extends ColumnConfigurator {
     }()
 
     @Lazy private List<DataConstraint> dataConstraints = {
-        def searchKeyword = getStringParam(keyForSearchKeywordId)
-        if (!searchKeyword.isLong()) {
-            throw new InvalidArgumentsException("Illegal search keyword id: $searchKeyword")
+        def searchKeywordIds = getStringParam(keyForSearchKeywordId).split(',') as List
+        def illegalSearchKeywordIds = searchKeywordIds.findAll{ !it.isLong() }
+        if (illegalSearchKeywordIds) {
+            throw new InvalidArgumentsException("Illegal search keyword ids: ${illegalSearchKeywordIds.join(',')}")
         }
 
         [subResource.createDataConstraint(
                 DataConstraint.SEARCH_KEYWORD_IDS_CONSTRAINT,
-                keyword_ids: [searchKeyword])]
+                keyword_ids: searchKeywordIds)]
     }()
 
     private TabularResult<AssayColumn, Number> openResultSet(String conceptPath) {

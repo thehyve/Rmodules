@@ -1,10 +1,6 @@
 package jobs
 
-import jobs.steps.BuildTableResultStep
-import jobs.steps.MultiRowAsGroupDumpTableResultsStep
-import jobs.steps.ParametersFileStep
-import jobs.steps.RCommandsStep
-import jobs.steps.Step
+import jobs.steps.*
 import jobs.steps.helpers.SimpleAddColumnConfigurator
 import jobs.steps.helpers.WaterfallColumnConfigurator
 import jobs.table.Table
@@ -19,7 +15,7 @@ import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 
 @Component
 @Scope('job')
-class Waterfall extends AbstractLocalRAnalysisJob {
+class Waterfall extends AbstractAnalysisJob {
     @Autowired
     SimpleAddColumnConfigurator primaryKeyColumnConfigurator
 
@@ -44,10 +40,6 @@ class Waterfall extends AbstractLocalRAnalysisJob {
     protected List<Step> prepareSteps() {
 
         List<Step> steps = []
-
-        steps << new ParametersFileStep(
-                temporaryDirectory: temporaryDirectory,
-                params: params)
 
         steps << new BuildTableResultStep(
                 table: table,

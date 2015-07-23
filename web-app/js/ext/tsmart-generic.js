@@ -468,18 +468,15 @@ GenericAnalysisView = Ext.extend(Object, {
     {
 
         var pollInterval = 1000;   // 1 second
-        var _me = this;
-
-        this.jobTask =    {
+        this.jobTask = new Ext.util.TaskRunner()
+        this.jobTask.start({
             jobName: jobName,
             parent: this,
             run: function() {
                 this.parent.updateJobStatus(jobName);
             },
             interval: pollInterval
-        }
-
-        Ext.TaskMgr.start(this.jobTask);
+        });
     },
 
     updateJobStatus: function (jobName) {
@@ -508,9 +505,8 @@ GenericAnalysisView = Ext.extend(Object, {
 
                         // close the job window
                         _me.jobWindow.close();
-
                         // stop the task manager
-                        Ext.TaskMgr.stop(_me.jobTask);
+                        _me.jobTask.stopAll();
 
                         //Set the results DIV to use the URL from the job.
                         var fullViewerURL = pageInfo.basePath + viewerURL;
@@ -523,12 +519,12 @@ GenericAnalysisView = Ext.extend(Object, {
                         _me.callback(jobName, _me.subView);
 
                     } else if (status == 'Cancelled') {
-                        Ext.TaskMgr.stop(_me.jobTask);
+                        _me.jobTask.stopAll();
                     } else if (status == 'Error') {
                         // close the job window
                         _me.jobWindow.close();
                         // stop the task
-                        Ext.TaskMgr.stop(_me.jobTask);
+                        _me.jobTask.stopAll();
                         // inform user on mandatory inputs need to be defined
                         Ext.MessageBox.show({
                             title: 'Error',
@@ -543,7 +539,7 @@ GenericAnalysisView = Ext.extend(Object, {
                 },
                 failure : function(result, request)
                 {
-                    Ext.TaskMgr.stop(_me.jobTask);
+                    _me.jobTask.stopAll();
                     showWorkflowStatusErrorDialog('Failed', 'Could not complete the job, please contact an administrator');
                 },
                 timeout : '300000',
@@ -621,6 +617,87 @@ GenericAnalysisView = Ext.extend(Object, {
 
             this.jobWindow.close();
         }
+    },
+
+    validateDataTypes: function (inputElement, validDataTypes, errorMessage, callback) {
+
+        // Inspect nodes
+        var _nodes = inputElement.dom.childNodes;
+        var nonHDNodes = [];
+        var _conceptPaths = new Array();
+        for (var i = 0; i < _nodes.length; i++) {
+
+            // check if node is high dimensional data node
+            var strVisualAttributes = _nodes[i].attributes['visualattributes'].value;
+            if (strVisualAttributes.indexOf('HIGH_DIMENSIONAL') == -1) { // if not
+                nonHDNodes.push(_nodes[i].textContent);
+            }
+
+            // collect concept path
+            var _str_key = _nodes[i].concept.key;
+            _conceptPaths.push(_str_key);
+        }
+
+        // Error for non-high dimensional nodes
+        if (nonHDNodes.length > 0) {
+            Ext.MessageBox.show({
+                title: "Validation Error",
+                msg: "The following nodes are not high-dimensional: " + nonHDNodes.join(", "),
+                buttons: Ext.MessageBox.OK,
+                icon: Ext.MessageBox.ERROR
+            });
+            return;
+        }
+
+        // Retrieve node details
+        Ext.Ajax.request({
+            url: pageInfo.basePath + "/HighDimension/nodeDetails",
+            method: 'POST',
+            timeout: '10000',
+            params: Ext.urlEncode({
+                conceptKeys: _conceptPaths
+            }),
+            success: function (result) {
+                var details = JSON.parse(result.responseText);
+                var isDetailsEmpty = true;
+
+                // Check if node details platforms match a valid one
+                for (var key in details) {
+                    // yes, the keys are the data types
+                    if (validDataTypes.indexOf(key) == -1) {
+                        Ext.MessageBox.show({
+                            title: "Validation Error",
+                            msg: errorMessage,
+                            buttons: Ext.MessageBox.OK,
+                            icon: Ext.MessageBox.ERROR
+                        });
+                        return;
+                    }
+                    isDetailsEmpty = false;
+                }
+
+                // Check if details are not empty
+                if (isDetailsEmpty) {
+                    Ext.MessageBox.show({
+                        title: "Validation Error",
+                        msg: "No platform information could be found for the specified data node. Please make sure the platform information was loaded correctly.",
+                        buttons: Ext.MessageBox.OK,
+                        icon: Ext.MessageBox.ERROR
+                    });
+                    return;
+                }
+
+                callback();
+            },
+            failure: function () {
+                Ext.MessageBox.show({
+                    title: "Validation Error",
+                    msg: "Cannot retrieve high dimensional node details",
+                    buttons: Ext.MessageBox.OK,
+                    icon: Ext.MessageBox.ERROR
+                });
+            }
+        });
     }
 
 });

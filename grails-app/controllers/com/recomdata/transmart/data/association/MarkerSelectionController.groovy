@@ -1,21 +1,5 @@
-/*************************************************************************   
-* Copyright 2008-2012 Janssen Research & Development, LLC.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-******************************************************************/
 
 package com.recomdata.transmart.data.association
-import java.util.ArrayList;
 
 class MarkerSelectionController {
 
@@ -45,7 +29,7 @@ class MarkerSelectionController {
 		
 		markerSelectionTable = RModulesOutputRenderService.fileParseLoop(tempDirectoryFile,/.*CMS.*\.TXT/,/.*CMS(.*)\.TXT/,parseMarkerSelectionStr)
 		
-		render(template: "/plugin/markerSelection_out", model:[imageLocations:imageLinks,markerSelectionTable:markerSelectionTable,zipLink:RModulesOutputRenderService.zipLink], , contextPath:pluginContextPath)
+		render(template: "/plugin/markerSelection_out", model:[imageLocations:imageLinks,markerSelectionTable:markerSelectionTable,zipLink:RModulesOutputRenderService.zipLink], contextPath:pluginContextPath)
 
 	}
 	
@@ -62,26 +46,13 @@ class MarkerSelectionController {
 		String tableHeader = """\
 						<thead>
 						<tr>
-							<th>Gene Symbol</th>	
-							<th>Probe ID</th>
-							<th>Raw p-value</th>
-							<th>Bonferroni</th>
-							<th>Holm</th>
-							<th>Hochberg</th>
-							<th>SidakSS</th>
-							<th>SidakSD</th>
-							<th>BH</th>
-							<th>BY</th>
-							<th>t</th>
-							<th>t (permutation)</th>
-							<th>Raw P (permutation)</th>
-							<th>Adjusted P (permutation)</th>
-							<th>Rank</th>
-							<th>S1 Mean</th>
-							<th>S2 Mean</th>
-							<th>S1 SD</th>
-							<th>S2 SD</th>
-							<th>Fold Change (relative to S1)</th>
+							<th>Gene Symbol&nbsp&nbsp&nbsp&nbsp</th>	
+							<th>Probe ID&nbsp&nbsp&nbsp&nbsp</th>
+							<th>Log2(fold change) S2 vs S1&nbsp&nbsp&nbsp&nbsp</th>
+							<th>t&nbsp&nbsp&nbsp&nbsp</th>
+							<th>P-value&nbsp&nbsp&nbsp&nbsp</th>
+							<th>Adjusted P-value&nbsp&nbsp&nbsp&nbsp</th>
+							<th>B&nbsp&nbsp&nbsp&nbsp</th>
 						</tr>
 						</thead>
 						"""
@@ -109,19 +80,6 @@ class MarkerSelectionController {
 							<td>${resultArray[4]}</td>
 							<td>${resultArray[5]}</td>
 							<td>${resultArray[6]}</td>
-							<td>${resultArray[7]}</td>
-							<td>${resultArray[8]}</td>
-							<td>${resultArray[9]}</td>
-							<td>${resultArray[10]}</td>
-							<td>${resultArray[11]}</td>
-							<td>${resultArray[12]}</td>
-							<td>${resultArray[13]}</td>
-							<td>${resultArray[14]}</td>
-							<td>${resultArray[15]}</td>
-							<td>${resultArray[16]}</td>
-							<td>${resultArray[17]}</td>
-							<td>${resultArray[18]}</td>
-							<td>${resultArray[19]}</td>
 						</tr>
 						"""
 				

@@ -16,14 +16,14 @@
 
 package com.recomdata.transmart.data.association
 
-import org.apache.commons.io.FileUtils
-
 class RModulesOutputRenderService {
 
 	static scope         = "request"
 
 	def grailsApplication
 	def zipService
+    def asyncJobService
+    def currentUserBean
 	def tempDirectory = ""
 	def jobName = ""
 	def jobTypeName = ""
@@ -46,47 +46,7 @@ class RModulesOutputRenderService {
         }
         dir
     }
-		
-    /**
-     * The directory where the zip file (and, if transferImageFile is true, the
-     * images as well) will be copied to. The web server should be able to serve
-     * static files from this directory via the logical name specified in
-     * the imageURL configuration entry.
-     *
-     * If transferImageFile is false, then this should be temporary jobs
-     * directory (see {@link #getTempFolderDirectory()}).
-     *
-     * @return the directory where the analysis files will be copied to.
-     */
-    private String getTempImageFolder() {
-        def dir = grailsApplication.config.RModules.temporaryImageFolder
-        if (dir && !dir.endsWith(File.separator)) {
-            dir += File.separator
-        }
-        if (!dir && !transferImageFile) {
-            dir = tempFolderDirectory
-        }
-	
-        if (!transferImageFile && dir != tempFolderDirectory) {
-            log.warn "We're not copying images, but the image directory is \
-                    not the same as the jobs directory!"
-        }
-	
-        dir
-    }
-			
-    /**
-     * Whether to copy the images from the jobs directory to another directory
-     * from which they can be served. This should be set to false for
-     * production for performance reasons.
-     *
-     * @return whether to copy images from the jobs directory to the
-     *         tempFolderDirectory.
-     */
-    private boolean isTransferImageFile() {
-        grailsApplication.config.RModules.transferImageFile
-    }
-			
+
     /**
      * The logical path from which the images will be served.
      * This used to be configurable via <code>RModules.imageURL</code>, but
@@ -109,55 +69,47 @@ class RModulesOutputRenderService {
     }
 
     def initializeAttributes(jobName, jobTypeName, linksArray) {
-        def zipLocation
-
         log.debug "initializeAttributes for jobName '$jobName'; jobTypeName " +
                 "'$jobTypeName'"
         log.debug "Settings are: jobs directory -> $tempFolderDirectory, " +
-                "images directory -> $tempImageFolder, images URL -> " +
-                "$imageURL, transfer image -> $transferImageFile"
+                "images URL -> $imageURL"
 
         this.jobName = jobName
         this.jobTypeName = jobTypeName
 
-        this.tempDirectory = tempFolderDirectory + jobName + File.separator +
-                "workingDirectory" + File.separator
-        String outputDirectory = tempImageFolder + this.jobName + File.separator
+        String analysisDirectory = tempFolderDirectory + jobName + File.separator
+        this.tempDirectory = analysisDirectory + "workingDirectory" + File.separator
 
-        File tempDirectoryFile   = new File(this.tempDirectory)
-        File outputDirectoryFile = new File(outputDirectory)
+        File tempDirectoryFile = new File(this.tempDirectory)
 
-        if (!outputDirectoryFile.exists()) {
-            if (transferImageFile) {
-                createDirectory(outputDirectoryFile)
-            }
-        }
-
+        // Rename and copy images if required, build image link list
         tempDirectoryFile.traverse(nameFilter: ~/(?i).*\.png/) { currentImageFile ->
             // Replace spaces with underscores, as Tomcat 6 is unable
             // to find files with spaces in their name
             String newFileName = currentImageFile.name.replaceAll(/[^.a-zA-Z0-9-_]/, "_")
-            File oldImage = new File(currentImageFile.path),
-                 newImage = new File(outputDirectory, newFileName);
-            log.debug("Move or copy $oldImage to $newImage")
-            if (transferImageFile) {
-                newImage = new File(outputDirectory, newFileName);
-                //TODO move FileUtils to Core
-                FileUtils.copyFile(oldImage, newImage)
-            } else {
-                oldImage.renameTo(newImage)
-            }
+            File oldImage = new File(currentImageFile.path)
+            File renamedImage = new File(tempDirectoryFile, newFileName)
+            log.debug("Rename $oldImage to $renamedImage")
+            oldImage.renameTo(renamedImage)
 
-            String currentLink = "${imageURL}$jobName/${newFileName}"
+            // Build url to image
+            String currentLink = "${imageURL}$jobName/workingDirectory/${newFileName}"
             log.debug("New image link: " + currentLink)
             linksArray.add(currentLink)
-        };
+        }
 
-        zipLocation = "${outputDirectory}" + File.separator + "zippedData.zip"
-        this.zipLink = "${imageURL}${jobName}/zippedData.zip"
-
-        if (!new File(zipLocation).isFile()) {
-            zipService.zipFolder(tempDirectory, zipLocation)
+        try {
+            boolean isAllowedToExport = asyncJobService.isUserAllowedToExportResults(currentUserBean, jobName)
+            if (isAllowedToExport) {
+                // Zip the working directory
+                String zipLocation = "${analysisDirectory}zippedData.zip"
+                if (!new File(zipLocation).isFile()) {
+                    zipService.zipFolder(tempDirectory, zipLocation)
+                }
+                this.zipLink = "${imageURL}${jobName}/zippedData.zip"
+            }
+        } catch (Exception e) {
+            log.error(e)
         }
     }
 	
@@ -196,6 +148,82 @@ class RModulesOutputRenderService {
 		
 		parseValueString
 	}
+
+    def parseVersionFile()
+    {
+        def tempDirectoryFile = new File(tempDirectory)
+        String versionData = fileParseLoop(tempDirectoryFile,/.*sessionInfo.*\.txt/,/.*sessionInfo(.*)\.txt/, parseVersionFileClosure)
+
+        return versionData
+    }
+
+    def parseVersionFileClosure = {
+        statsInStr ->
+
+            //Buffer that will hold the HTML we output.
+            StringBuffer buf = new StringBuffer();
+
+            buf.append("<br /><a href='#' onclick='\$(\"versionInfoDiv\").toggle()'><span class='AnalysisHeader'>R Version Information</span></a><br /><br />")
+
+            buf.append("<div id='versionInfoDiv' style='display: none;'>")
+
+            //This will tell us if we are printing the contents of the package or the session info. We will print the package contents in a table.
+            Boolean packageCommand = false
+            Boolean firstPackageLine = true
+
+            statsInStr.eachLine
+                    {
+
+                        if(it.contains("||PACKAGEINFO||"))
+                        {
+                            packageCommand = true
+                            return;
+                        }
+
+                        if(!packageCommand)
+                        {
+                            buf.append(it)
+                            buf.append("<br />")
+                        }
+                        else
+                        {
+                            def currentLine = it.split("\t")
+
+                            if(firstPackageLine)
+                            {
+                                buf.append("<br /><br /><table class='AnalysisResults'>")
+                                buf.append("<tr>")
+                                currentLine.each()
+                                        {
+                                            currentSegment ->
+
+                                                buf.append("<th>${currentSegment}</th>")
+
+                                        }
+                                buf.append("</tr>")
+
+                                firstPackageLine = false
+                            }
+                            else
+                            {
+                                buf.append("<tr>")
+                                currentLine.each()
+                                        {
+                                            currentSegment ->
+
+                                                buf.append("<td>${currentSegment}</td>")
+
+                                        }
+                                buf.append("</tr>")
+                            }
+                        }
+                    }
+
+            buf.append("</table>")
+            buf.append("</div>")
+
+            buf.toString();
+    }
 	
     def createDirectory(File directory) {
         def dirs = []

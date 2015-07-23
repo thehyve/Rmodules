@@ -151,11 +151,32 @@ HighDimensionalData.prototype.create_pathway_search_box = function (searchInputE
         applyTo: searchInputEltName,
         itemSelector: 'div.search-item',
 
-        onSelect: function (record) { // override default onSelect to do redirect
+        listeners: {
+            'beforequery': function (queryEvent) {
+                // Use the last element in the query string as the query
+                var keywords = queryEvent.query.split(/[,\s]\s*/);
+                queryEvent.query = keywords[keywords.length - 1];
+            }
+        },
+
+        onSelect: function (record) {
+            // Check for duplicates
+            var ids = GLOBAL.CurrentPathway.split(",");
+            if (ids.indexOf(record.data.id.toString()) == -1) {
+
+                // Append the selected keyword to the list
+                if (GLOBAL.CurrentPathway) {
+                    GLOBAL.CurrentPathway += ",";
+                    GLOBAL.CurrentPathwayName += ", ";
+                }
+                GLOBAL.CurrentPathway += record.data.id.toString();
+                GLOBAL.CurrentPathwayName += record.data.keyword;
+            }
+
+            // Set the value in the text field
             var sp = Ext.get(searchInputEltName);
-            sp.dom.value = record.data.keyword;
-            GLOBAL.CurrentPathway = record.data.id;
-            GLOBAL.CurrentPathwayName = record.data.keyword;
+            sp.dom.value = GLOBAL.CurrentPathwayName;
+
             search.collapse();
         }
     });
@@ -255,6 +276,7 @@ HighDimensionalData.prototype.generate_view = function () {
             title: 'Compare Subsets-Pathway Selection',
             layout: 'fit',
             width: 475,
+            height: 370,
             autoHeight: true,
             closable: false,
             plain: true,
@@ -302,6 +324,14 @@ HighDimensionalData.prototype.generate_view = function () {
 
     if (!_view) {
         _view = _create_view();
+        _view.on('resize', function(vp, width, height) {
+            var me = this,
+                ref = jQuery("#resultsTabPanel"),
+                left = ref.offset().left + (ref.width() - me.width) / 2,
+                top = ref.offset().top + (ref.height() - me.height) / 2;
+            
+            me.setPosition(left > 0 ? left : 0, top > 0 ? top : 0);
+        }, _view);
     }
 
     return _view;
@@ -320,10 +350,12 @@ HighDimensionalData.prototype.get_inputs = function (divId) {
     ]
 }
 
-HighDimensionalData.prototype.gather_high_dimensional_data = function (divId, hideAggregration) {
+HighDimensionalData.prototype.gather_high_dimensional_data = function (divId, hideAggregration, doValidatePlatforms) {
 
     var _this = this;
     this.hideAggregration=hideAggregration;
+    doValidatePlatforms = typeof doValidatePlatforms !== 'undefined' ? doValidatePlatforms : true;
+
     /**
      * Reset global variables
      * @private
@@ -347,7 +379,7 @@ HighDimensionalData.prototype.gather_high_dimensional_data = function (divId, hi
     if (!variableDivEmpty(divId)
         && ((GLOBAL.CurrentSubsetIDs[1] == null) || (multipleSubsets() && GLOBAL.CurrentSubsetIDs[2] == null))) {
         runAllQueriesForSubsetId(function () {
-            _this.gather_high_dimensional_data(divId, hideAggregration);
+            _this.gather_high_dimensional_data(divId, hideAggregration, doValidatePlatforms);
         }, divId);
         return;
     }
@@ -364,13 +396,18 @@ HighDimensionalData.prototype.gather_high_dimensional_data = function (divId, hi
       this.fetchNodeDetails( divId, function( result ) {
         _this.data = JSON.parse(result.responseText);
 
-        platforms = _this.getPlatformValidator(_this.getPlatforms(_this.data));
-        var formValidator = new FormValidator(platforms);
+        if (doValidatePlatforms) {
+          platforms = _this.getPlatformValidator(_this.getPlatforms(_this.data));
+          var formValidator = new FormValidator(platforms);
 
-        if (formValidator.validateInputForm()) {
+          if (formValidator.validateInputForm()) {
+            _this.display_high_dimensional_popup();
+          } else {
+            formValidator.display_errors();
+          }
+        }
+        else {
           _this.display_high_dimensional_popup();
-        } else {
-          formValidator.display_errors();
         }
 
       });

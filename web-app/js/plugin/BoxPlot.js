@@ -28,27 +28,6 @@ BoxPlotView.prototype = new RmodulesView();
  */
 BoxPlotView.prototype.constructor = BoxPlotView;
 
-BoxPlotView.prototype.illegalBinning = function(independentVariables, dependentVariables) {
-  if (!GLOBAL.Binning) {
-    return false;
-  }
-
-  // I would rather have kept this function ignorant of the outside world.
-  var variableToBeBinned = Ext.get("selBinVariableSelection").getValue();
-
-  if (variableToBeBinned == "IND" && independentVariables.length > 1) {
-    Ext.Msg.alert('Illegal binning', 'More that 1 independent variable selected');
-    return true;
-  }
-
-  if (variableToBeBinned == "DEP" && dependentVariables.length > 1) {
-    Ext.Msg.alert('Illegal binning', 'More that 1 dependent variable selected');
-    return true;
-  }
-
-  return false;
-}
-
 /**
  * Get form parameters
  * TODO: Refactor the validation to define validation in FormValidator.js instead here
@@ -81,11 +60,38 @@ BoxPlotView.prototype.get_form_params = function (form) {
      * @private
      */
     var _isCategorical = function (nodeTypes) {
-        return (nodeTypes[0] == "null") ? true : false;
-    } //
+        return (nodeTypes[0] == "null" || nodeTypes[0] == "alphaicon") ? true : false;
+    }
 
-    var dependentVariableConceptCode = "";
-    var independentVariableConceptCode = "";
+    var _isNumerical = function (nodeTypes) {
+        return (nodeTypes[0] == "valueicon") ? true : false;
+    }
+
+    if (GLOBAL.Binning) {
+        var variableToBeBinned = document.getElementById("selBinVariableSelection").value
+        var multipleNumericalVariablesToBeBinned
+
+        if (variableToBeBinned == "IND"
+            && _isNumerical(independentNodeList)
+            && independentVariableEle.dom.childNodes.length > 1) {
+
+            multipleNumericalVariablesToBeBinned = true;
+        } else if (variableToBeBinned == "DEP"
+            && _isNumerical(dependentNodeList)
+            && dependentVariableEle.dom.childNodes.length > 1) {
+
+            multipleNumericalVariablesToBeBinned = true;
+        }
+
+        if (multipleNumericalVariablesToBeBinned) {
+            Ext.Msg.alert('Illegal binning', 'More that 1 ' + (variableToBeBinned == "IND" ? 'in' : '')
+                +'dependent numerical variable selected.');
+            return;
+        }
+    }
+
+    var dependentVariableConceptPath = "";
+    var independentVariableConceptPath = "";
 
     var flipImage = false;
 
@@ -100,10 +106,11 @@ BoxPlotView.prototype.get_form_params = function (form) {
         //Loop through the category variables and add them to a comma seperated list.
         for (nodeIndex = 0; nodeIndex < independentVariableEle.dom.childNodes.length; nodeIndex++) {
             //If we already have a value, add the seperator.
-            if (independentVariableConceptCode != '') independentVariableConceptCode += '|'
+            if (independentVariableConceptPath != '') independentVariableConceptPath += '|'
 
             //Add the concept path to the string.
-            independentVariableConceptCode += getQuerySummaryItem(independentVariableEle.dom.childNodes[nodeIndex]).trim()
+            independentVariableConceptPath += RmodulesView.fetch_concept_path(
+                independentVariableEle.dom.childNodes[nodeIndex])
         }
     }
 
@@ -112,34 +119,31 @@ BoxPlotView.prototype.get_form_params = function (form) {
         //Loop through the category variables and add them to a comma seperated list.
         for (nodeIndex = 0; nodeIndex < dependentVariableEle.dom.childNodes.length; nodeIndex++) {
             //If we already have a value, add the seperator.
-            if (dependentVariableConceptCode != '') dependentVariableConceptCode += '|'
+            if (dependentVariableConceptPath != '') dependentVariableConceptPath += '|'
 
             //Add the concept path to the string.
-            dependentVariableConceptCode += getQuerySummaryItem(dependentVariableEle.dom.childNodes[nodeIndex]).trim()
+            dependentVariableConceptPath += RmodulesView.fetch_concept_path(
+                dependentVariableEle.dom.childNodes[nodeIndex])
         }
     }
 
     //Make sure the user entered some items into the variable selection boxes.
-    if (dependentVariableConceptCode == '') {
+    if (dependentVariableConceptPath == '') {
         Ext.Msg.alert('Missing input!', 'Please drag at least one concept into the dependent variable box.');
         return;
     }
 
-    if (independentVariableConceptCode == '') {
+    if (independentVariableConceptPath == '') {
         Ext.Msg.alert('Missing input!', 'Please drag at least one concept into the independent variable box.');
         return;
     }
 
-    if (this.illegalBinning(independentVariableEle.dom.childNodes, dependentVariableEle.dom.childNodes)) {
-      return;
-    }
-
-    var variablesConceptCode = dependentVariableConceptCode + "|" + independentVariableConceptCode;
+    var variablesConceptCode = dependentVariableConceptPath + "|" + independentVariableConceptPath;
 
     var formParams = {
-        dependentVariable: dependentVariableConceptCode,
+        dependentVariable: dependentVariableConceptPath,
         dependentVariableCategorical: _isCategorical(dependentNodeList),
-        independentVariable: independentVariableConceptCode,
+        independentVariable: independentVariableConceptPath,
         independentVariableCategorical: _isCategorical(independentNodeList),
         jobType: 'BoxPlot',
         variablesConceptPaths: variablesConceptCode
@@ -364,6 +368,44 @@ BoxPlotView.prototype.submit_job = function (form) {
         submitJob(formParams);
     }
 
+}
+
+BoxPlotView.prototype.clear_high_dimensional_input = function (div) {
+    RmodulesView.prototype.clear_high_dimensional_input.call(this, div);
+
+    // Only clear bins for corresponding variable (dependent/independent)
+    var variableToBeBinned = document.getElementById("selBinVariableSelection").value
+    if (div == "divDependentVariable" && variableToBeBinned == "DEP" ||
+        div == "divIndependentVariable" && variableToBeBinned == "IND") {
+
+        // Clear numerical bins
+        function clearTxt(txt) {
+            if (txt == null) {
+                return;
+            }
+            txt.value = "";
+        }
+        for (i = 1; i <= GLOBAL.NumberOfBins; i++) {
+            clearTxt(Ext.getDom('txtBin' + i + 'RangeLow'));
+            clearTxt(Ext.getDom('txtBin' + i + 'RangeHigh'));
+        }
+
+        // Clear categorical bins
+        function clearDiv(div) {
+            if (div == null) {
+                return;
+            }
+            for (x = div.dom.childNodes.length - 1; x >= 0; x--) {
+                var child = div.dom.childNodes[x];
+                div.dom.removeChild(child);
+            }
+        }
+        for (i = 1; i <= GLOBAL.NumberOfBins; i++) {
+            clearDiv(Ext.get('divCategoricalBin' + i));
+        }
+        // Clear categories box
+        clearDiv(Ext.get('divCategoricalItems'));
+    }
 }
 
 // instantiate table fisher instance

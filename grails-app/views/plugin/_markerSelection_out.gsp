@@ -19,11 +19,13 @@
         </g:if>
         <br />
         <g:if test="${grailsApplication.config.com.thomsonreuters.transmart.metacoreAnalyticsEnable}">
-            <g:render template="/metacoreEnrichment/enrichmentResult" model="[prefix: 'marker_']"/>
+            <g:metacoreEnrichmentResult/>
         </g:if>
     </div>
 
     ${markerSelectionTable}
 
-    <a href="${resource(file: zipLink)}" class="downloadLink">Download raw R data</a>
+    <g:if test="${zipLink}">
+        <a class='AnalysisLink' class='downloadLink' href="${resource(file: zipLink)}">Download raw R data</a>
+    </g:if>
 </p>

@@ -7,7 +7,7 @@
     %{--help and title--}%
     <h2>
         Variable Selection
-        <a href='JavaScript:D2H_ShowHelp(1505,helpURL,"wndExternal",CTXT_DISPLAY_FULLHELP )'>
+        <a href='JavaScript:D2H_ShowHelp(1088,helpURL,"wndExternal",CTXT_DISPLAY_FULLHELP )'>
             <img src="${resource(dir: 'images', file: 'help/helpicon_white.jpg')}" alt="Help"/>
         </a>
     </h2>
@@ -115,9 +115,11 @@
             <div class="three-layout-right">
                 <fieldset class="inputFields">
                     <h3>Censoring Variable</h3>
-                    <div class="divInputLabel">Select the appropriate censoring variable and drag it into the box. For
-                    example, "Survival (Censor) -> Yes".
-                    This variable is not required.	</div>
+                    <div class="divInputLabel">
+                        Drag the item for which to perform censoring in the analysis into this box. For example, when
+                        performing Overall survival analysis, drag 'Survival status = alive' into this box.
+                        This variable is not obligatory.
+                    </div>
                     <div id='divCensoringVariable' class="queryGroupIncludeLong divInputBox"></div>
                     <div class="highDimBtns">
                         <button type="button" onclick="survivalAnalysisView.clear_high_dimensional_input('divCensoringVariable')">Clear</button>

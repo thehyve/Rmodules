@@ -20,6 +20,8 @@ import com.google.common.collect.Maps
 import grails.converters.JSON
 import grails.util.Holders
 import jobs.*
+import jobs.misc.AnalysisConstraints
+import jobs.misc.AnalysisQuartzJobAdapter
 import org.codehaus.groovy.grails.web.converters.exceptions.ConverterException
 import org.codehaus.groovy.grails.web.json.JSONElement
 import org.quartz.JobDataMap
@@ -27,7 +29,7 @@ import org.quartz.JobDetail
 import org.quartz.SimpleTrigger
 import org.transmartproject.core.exceptions.InvalidArgumentsException
 
-import static jobs.AnalysisQuartzJobAdapter.*
+import static jobs.misc.AnalysisQuartzJobAdapter.*
 
 class RModulesController {
     final static Map<String, String> lookup = [
@@ -38,10 +40,13 @@ class RModulesController {
             "PROTEOMICS":       "protein",
             "RNASEQ":           "rnaseq_cog",
             "METABOLOMICS":     "metabolite",
-            "acgh":             "acgh"
+            "Chromosomal":      "acgh",
+            "acgh":             "acgh",
+            "rnaseq":           "rnaseq",
+            "Chromosomal":      "acgh",
+            "RNASEQ_RCNT":      "rnaseq",
+            "VCF":		"vcf"
     ]
-
-    private static final String PARAM_ANALYSIS_CONSTRAINTS = 'analysisConstraints'
 
     def springSecurityService
     def asyncJobService
@@ -66,7 +71,7 @@ class RModulesController {
      * Current methodology is username-jobtype-ID from sequence generator
      */
     def createnewjob = {
-        def result = asyncJobService.createnewjob(params.jobName, params.jobType)
+        def result = asyncJobService.createnewjob(params)
 
         response.setContentType("text/json")
         response.outputStream << result.toString()
@@ -81,6 +86,10 @@ class RModulesController {
         if (jobResultsService[params.jobName] == null) {
             throw new IllegalStateException('Cannot schedule job; it has not been created')
         }
+
+        // has to come before and flush the new state, otherwise the
+        // sessionFactory running on the quartz thread may get stale values
+        asyncJobService.updateJobInputs(params.jobName, params)
 
         switch (params['analysis']) {
             case 'heatmap':
@@ -119,14 +128,23 @@ class RModulesController {
             case 'waterfall':
                 jsonResult = createJob(params, Waterfall, false)
                 break
-            case 'histogram':
-                jsonResult = createJob(params, Histogram, false)
+            case 'logisticRegression':
+                jsonResult = createJob(params, LogisticRegression, false)
+                break
+            case 'geneprint':
+                jsonResult = createJob(params, Geneprint)
                 break
             case 'acghFrequencyPlot':
                 jsonResult = createJob(params, AcghFrequencyPlot)
                 break
             case 'groupTestaCGH':
                 jsonResult = createJob(params, AcghGroupTest)
+                break
+            case 'aCGHSurvivalAnalysis':
+                jsonResult = createJob(params, AcghSurvivalAnalysis)
+                break
+            case 'groupTestRNASeq':
+                jsonResult = createJob(params, RNASeqGroupTest)
                 break
             default:
                 jsonResult = RModulesService.scheduleJob(
@@ -156,14 +174,14 @@ class RModulesController {
         quartzScheduler.scheduleJob(jobDetail, trigger)
     }
 
-    private AnalysisConstraints createAnalysisConstraints(Map params) {
+    public static AnalysisConstraints createAnalysisConstraints(Map params) {
         Map map = validateParamAnalysisConstraints(params) as Map
         map["data_type"] = lookup[map["data_type"]]
         map = massageConstraints map
         new AnalysisConstraints(map: map)
     }
 
-    private Map massageConstraints(Map analysisConstraints) {
+    private static Map massageConstraints(Map analysisConstraints) {
         analysisConstraints["dataConstraints"].each { constraintType, value ->
             if (constraintType == 'search_keyword_ids') {
                 analysisConstraints["dataConstraints"][constraintType] = [ keyword_ids: value ]
@@ -177,7 +195,7 @@ class RModulesController {
         analysisConstraints
     }
 
-    private JSONElement validateParamAnalysisConstraints(Map params) {
+    private static JSONElement validateParamAnalysisConstraints(Map params) {
         if (!params[PARAM_ANALYSIS_CONSTRAINTS]) {
             throw new InvalidArgumentsException("No parameter $PARAM_ANALYSIS_CONSTRAINTS")
         }

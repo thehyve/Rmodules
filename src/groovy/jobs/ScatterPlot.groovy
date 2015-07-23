@@ -17,7 +17,7 @@ import static jobs.steps.AbstractDumpStep.DEFAULT_OUTPUT_FILE_NAME
 
 @Component
 @Scope('job')
-class ScatterPlot extends AbstractLocalRAnalysisJob {
+class ScatterPlot extends AbstractAnalysisJob {
 
     @Autowired
     SimpleAddColumnConfigurator primaryKeyColumnConfigurator
@@ -71,10 +71,6 @@ class ScatterPlot extends AbstractLocalRAnalysisJob {
     @Override
     protected List<Step> prepareSteps() {
         List<Step> steps = []
-
-        steps << new ParametersFileStep(
-                temporaryDirectory: temporaryDirectory,
-                params: params)
 
         steps << new BuildTableResultStep(
                 table:         table,
