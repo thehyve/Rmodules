@@ -38,6 +38,9 @@ grails.project.test.class.dir = "target/test-classes"
 grails.project.test.reports.dir = "target/test-reports"
 
 grails.project.dependency.resolver = "maven"
+grails.project.dependency.distribution = {
+    remoteRepository(id: "nl.thehyve.nexus", url: "https://repo.thehyve.nl/content/repositories/releases/")
+}
 grails.project.dependency.resolution = {
     // inherit Grails' default dependencies
     inherits("global") {
