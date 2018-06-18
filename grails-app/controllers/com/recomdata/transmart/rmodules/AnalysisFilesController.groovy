@@ -1,24 +1,19 @@
 package com.recomdata.transmart.rmodules
 
-import org.transmartproject.core.exceptions.InvalidRequestException
-
-import java.util.regex.Matcher
-import java.util.regex.Pattern
+import org.transmartproject.jobs.access.JobsAccessChecksService
 
 class AnalysisFilesController {
 
-    public static final String ROLE_ADMIN = 'ROLE_ADMIN'
-
     def sendFileService
 
-    def springSecurityService
-
     def RModulesOutputRenderService
+
+    JobsAccessChecksService jobsAccessChecksService
 
     def download() {
         String jobName = params.analysisName
 
-        if (!checkPermissions(jobName)) {
+        if (!jobsAccessChecksService.canDownload(jobName)) {
             render status: 403
             return
         }
@@ -64,44 +59,7 @@ class AnalysisFilesController {
         sendFileService.sendFile servletContext, request, response, targetFile
     }
 
-    private boolean isAdmin() {
-        springSecurityService.principal.authorities.any {
-            it.authority == ROLE_ADMIN
-        }
-    }
-
     private File getJobsDirectory() {
         new File(RModulesOutputRenderService.tempFolderDirectory)
     }
-
-    private boolean checkPermissions(String jobName) {
-        String userName = extractUserFromJobName(jobName)
-
-        def loggedInUser = springSecurityService.principal?.username
-        if (!loggedInUser) {
-            log.error 'Could not determine current logged in user\'s name'
-            return false
-        }
-
-        if (userName == loggedInUser || admin) {
-            return true
-        }
-
-        log.warn "User $loggedInUser has no access for job $jobName; refusing " +
-                "request for job $jobName"
-        false
-    }
-
-    private String extractUserFromJobName(String jobName) {
-        Pattern pattern = ~/(.+)-[a-zA-Z]+-\d+/
-        Matcher matcher = pattern.matcher(jobName)
-
-        if (!matcher.matches()) {
-            //should never happen due to url mapping
-            throw new InvalidRequestException('Invalid job name')
-        }
-
-        matcher.group(1)
-    }
-
 }
