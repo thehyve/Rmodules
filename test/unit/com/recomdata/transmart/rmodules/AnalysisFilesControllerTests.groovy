@@ -7,6 +7,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.transmartproject.core.exceptions.InvalidRequestException
+import org.transmartproject.jobs.access.JobsAccessChecksService
 
 import javax.servlet.ServletContext
 import javax.servlet.http.HttpServletRequest
@@ -19,18 +20,14 @@ import static org.hamcrest.Matchers.*
 @WithGMock
 class AnalysisFilesControllerTests {
 
-    private static final String USER_NAME = 'user'
-    private static final String OTHER_USER_NAME = 'other_user'
-    private static final String ADMIN_NAME = 'admin'
     private static final String EXISTING_FILE_NAME = 'file_that_exists'
     private static final String FILE_CONTENTS = 'file contents\n'
-    private static final String ANALYSIS_NAME = "$USER_NAME-Analysis-100"
+    private static final String ANALYSIS_NAME = "user-Analysis-100"
 
     File temporaryDirectory
     File analysisDirectory
     File targetFile
     def sendFileServiceMock
-    def mockGrailsUser
 
     @Before
     void before() {
@@ -45,26 +42,9 @@ class AnalysisFilesControllerTests {
         sendFileServiceMock = mock()
         controller.sendFileService = sendFileServiceMock
 
-        mockGrailsUser = mock()
-        controller.springSecurityService = mock()
-        controller.springSecurityService.principal.
-                returns(mockGrailsUser).stub()
+        controller.jobsAccessChecksService = mock JobsAccessChecksService
 
         params.analysisName = ANALYSIS_NAME
-    }
-
-    void setTestUsername(String username) {
-        mockGrailsUser.username.returns username
-    }
-
-    void setAdmin(boolean value) {
-        if (value) {
-            def adminAuthority = mock()
-            adminAuthority.authority.returns AnalysisFilesController.ROLE_ADMIN
-            mockGrailsUser.authorities.returns([adminAuthority])
-        } else {
-            mockGrailsUser.authorities.returns([])
-        }
     }
 
     void setFile(String filename) {
@@ -82,8 +62,8 @@ class AnalysisFilesControllerTests {
     @Test
     void basicTest() {
         // test the normal circumstances (file exists and is allowed)
-        testUsername = USER_NAME
-        file         = EXISTING_FILE_NAME
+        controller.jobsAccessChecksService.canDownload(ANALYSIS_NAME).returns(true)
+        file = EXISTING_FILE_NAME
 
         sendFileServiceMock.sendFile(isA(ServletContext),
                 isA(HttpServletRequest), isA(HttpServletResponse),
@@ -98,8 +78,7 @@ class AnalysisFilesControllerTests {
 
     @Test
     void testNoPermission() {
-        testUsername = OTHER_USER_NAME
-        admin        = false
+        controller.jobsAccessChecksService.canDownload(ANALYSIS_NAME).returns(false)
 
         play {
             controller.download()
@@ -109,37 +88,9 @@ class AnalysisFilesControllerTests {
     }
 
     @Test
-    void testAdminAlwaysHasPermission() {
-        testUsername = ADMIN_NAME
-        admin        = true
-        file         = EXISTING_FILE_NAME
-
-        sendFileServiceMock.sendFile(isA(ServletContext),
-                isA(HttpServletRequest), isA(HttpServletResponse),
-                is(equalTo(targetFile)))
-
-        play {
-            controller.download()
-        }
-
-        assertThat response.status, is(200)
-    }
-
-    @Test
-    void testBadAnalysisName() {
-        params.analysisName = 'not_a_valid_analysis_name'
-
-        play {
-            shouldFail InvalidRequestException, {
-                controller.download()
-            }
-        }
-    }
-
-    @Test
     void testInexistingAnalysisName() {
-        testUsername        = USER_NAME
         params.analysisName = ANALYSIS_NAME + '1'
+        controller.jobsAccessChecksService.canDownload(params.analysisName).returns(true)
 
         play {
             controller.download()
@@ -150,19 +101,19 @@ class AnalysisFilesControllerTests {
 
     @Test
     void testAccessToExternalFilesNotAllowed() {
-        testUsername        = USER_NAME
-
+        controller.jobsAccessChecksService.canDownload(ANALYSIS_NAME).returns(true)
         file = '../test'
+
         play {
             controller.download()
         }
+
         assertThat response.status, is(404)
     }
 
     @Test
     void testNonExistingFile() {
-        testUsername = USER_NAME
-
+        controller.jobsAccessChecksService.canDownload(ANALYSIS_NAME).returns(true)
         params.path = 'file_that_does_not_exist'
 
         play {
